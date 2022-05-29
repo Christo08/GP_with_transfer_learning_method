@@ -12,24 +12,27 @@ public class DataCleaner {
 
     static Map<String, String> dryBeamClassesMap;
     static Map<String, String> irisClassesMap;
+
     static NumberFormat formatter;
 
+    static String pathToRawDataFolder;
+    static String pathToCleanDataFolder;
+
     public static void main(String[] args) {
-        String pathToRawDataFolder ="C:\\Users\\User\\OneDrive\\tuks\\honors\\year 2\\COS 700\\Research\\Data\\Raw";
-        String pathToCleanDataFolder="C:\\Users\\User\\OneDrive\\tuks\\honors\\year 2\\COS 700\\Research\\Data\\Cleaned";
+        pathToRawDataFolder ="C:\\Users\\User\\OneDrive\\tuks\\honors\\year 2\\COS 700\\Research\\Data\\Raw";
+        pathToCleanDataFolder="C:\\Users\\User\\OneDrive\\tuks\\honors\\year 2\\COS 700\\Research\\Data\\Cleaned";
         formatter = new DecimalFormat("#0.00");
 
-        System.out.println("Creating maps");
         initialiseMaps();
-        System.out.println("Finished creating maps");
 
-        System.out.println("Cleaning dry beam data set");
-        cleanDryBeamDataSet(pathToRawDataFolder, pathToCleanDataFolder);
-        System.out.println("\nFinished cleaning dry beam data set");
+        cleanDryBeamDataSet();
+        System.out.println();
 
-        System.out.println("Cleaning iris data set");
-        cleanIrisDataSet(pathToRawDataFolder, pathToCleanDataFolder);
-        System.out.println("\nFinished cleaning iris data set");
+        cleanIrisDataSet();
+        System.out.println();
+
+        cleanSeedsDataSet();
+        System.out.println();
     }
 
     private static void initialiseMaps() {
@@ -48,7 +51,7 @@ public class DataCleaner {
         irisClassesMap.put("Iris-virginica","3");
     }
 
-    private static void cleanDryBeamDataSet(String pathToRawDataFolder, String pathToCleanDataFolder) {
+    private static void cleanDryBeamDataSet() {
         try {
             String pathsToRawDryBeamDataset = pathToRawDataFolder+"\\DryBeanDataset\\Dry_Bean_Dataset.csv";
             File dryBeamFile = new File(pathsToRawDryBeamDataset);
@@ -83,7 +86,7 @@ public class DataCleaner {
         }
     }
 
-    private static void cleanIrisDataSet(String pathToRawDataFolder, String pathToCleanDataFolder) {
+    private static void cleanIrisDataSet() {
         try {
             String pathsToRawIrisDataset = pathToRawDataFolder+"\\Iris\\iris.data";
             File irisFile = new File(pathsToRawIrisDataset);
@@ -112,6 +115,36 @@ public class DataCleaner {
             System.out.println("Can not open iris data set.");
         } catch (IOException e) {
             System.out.println("Can not create iris data set file.");
+        }
+    }
+
+    private static void cleanSeedsDataSet() {
+        try {
+            String pathsToRawSeedsDataset = pathToRawDataFolder+"\\Seeds\\seeds_dataset.txt";
+            File seedsFile = new File(pathsToRawSeedsDataset);
+            Scanner seedsReader = new Scanner(seedsFile);
+            String output ="";
+            long numberOfLines =0;
+            while (seedsReader.hasNextLine()){
+                String line = seedsReader.nextLine().trim();
+                if (!line.isEmpty()){
+                    numberOfLines++;
+                    output +=line.replaceAll("\t",",")+"\n";
+                    printProgress(numberOfLines, 210, "seeds");
+                }
+            }
+            seedsReader.close();
+
+            String pathsToCleanSeedsDataset = pathToCleanDataFolder+"\\Seeds\\seeds.txt";
+            File cleanSeedsFile = new File(pathsToCleanSeedsDataset);
+            cleanSeedsFile.createNewFile();
+            FileWriter seedsWriter = new FileWriter(cleanSeedsFile);
+            seedsWriter.write(output);
+            seedsWriter.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("Can not open seeds data set.");
+        } catch (IOException e) {
+            System.out.println("Can not create seeds data set file.");
         }
     }
 

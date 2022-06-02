@@ -39,7 +39,12 @@ public class DataController {
                     }
                     else
                     {
-                        dataLine.put(String.valueOf((char)(65+counter)), number);
+                        String attributeName = String.valueOf((char)(65+counter));
+                        if (numberOfLines ==1)
+                        {
+                            PopulationController.addAttributeToFunctionSet(attributeName);
+                        }
+                        dataLine.put(attributeName, number);
                     }
                 }
                 data.add(dataLine);

@@ -8,6 +8,7 @@ import java.util.*;
 
 public class DataController {
     private List<Map<String, Double>> data;
+    private String dataSetName;
     private NumberFormat formatter = new DecimalFormat("#0.00");
 
     public DataController(String pathToFile) throws FileNotFoundException {
@@ -23,6 +24,7 @@ public class DataController {
         }
         double numberOfLines =0;
         String fileName = pathToFile.substring(pathToFile.lastIndexOf("\\")+1, pathToFile.lastIndexOf("."));
+        dataSetName = fileName;
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
             if (!line.isEmpty()){
@@ -57,6 +59,14 @@ public class DataController {
 
     public List<Map<String, Double>> getData() {
         return data;
+    }
+
+    public List<String> getUniqueAnswers() {
+        List<String> uniqueAnswers = new ArrayList<>(ConfigController.getNumberOfUniqueAnswersForDataset().get(dataSetName));
+        for (int counter =0; counter < ConfigController.getNumberOfUniqueAnswersForDataset().get(dataSetName); counter++){
+            uniqueAnswers.add(counter, Double.toString(counter+1));
+        }
+        return uniqueAnswers;
     }
 
     private void printProgress(double current, double total, String dataSetName) {

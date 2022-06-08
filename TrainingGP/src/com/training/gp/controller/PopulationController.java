@@ -45,9 +45,9 @@ public class PopulationController {
         return chromosomes.get(index);
     }
 
-    public double evaluateChromosomes(Map<String, Double> dataLine, int chromosomesNumber) {
+    public double evaluateChromosomes(Map<String, Double> dataLine, int chromosomesIndex) {
         this.dataLine = dataLine;
-        return chromosomes.get(chromosomesNumber).evaluate();
+        return chromosomes.get(chromosomesIndex).evaluate();
     }
 
     public Chromosomes mutationChromosomes(int chromosomesIndex) {
@@ -153,4 +153,5 @@ public class PopulationController {
             return null;
 
     }
+
 }

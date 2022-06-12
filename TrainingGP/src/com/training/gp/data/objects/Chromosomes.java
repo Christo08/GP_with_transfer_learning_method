@@ -1,4 +1,7 @@
-package com.training.gp.controller;
+package com.training.gp.data.objects;
+
+import com.training.gp.controllers.gp.GPController;
+import com.training.gp.controllers.gp.PopulationController;
 
 import java.util.LinkedList;
 import java.util.List;

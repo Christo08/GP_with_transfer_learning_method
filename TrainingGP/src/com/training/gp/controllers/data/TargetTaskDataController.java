@@ -1,29 +1,32 @@
-package com.training.gp.controller;
+package com.training.gp.controllers.data;
+
+import com.training.gp.controllers.ConfigController;
+import com.training.gp.controllers.gp.PopulationController;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 
-public class SourceTaskDataController extends DataController{
+public class TargetTaskDataController extends DataController {
 
-    private List<Map<String, Double>> dataSet1;
-    private String dataSet1Name;
-    private int sizeOfBatchForDataset1;
+    private List<Map<String, Double>> trainingDataSet;
+    private int trainingSizeOfBatchForDataset;
+    protected String dataSetTrainingName;
 
-    private List<Map<String, Double>> dataSet2;
-    private String dataSet2Name;
-    private int sizeOfBatchForDataset2;
+    private List<Map<String, Double>> testingDataSet;
+    private int testingSizeOfBatchForDataset;
+    protected String dataSetTestingName;
 
-    public SourceTaskDataController(String pathToData) throws FileNotFoundException {
+    public TargetTaskDataController(String pathToData, String dataSetName) throws FileNotFoundException {
         super();
-        String pathToFile = pathToData+ConfigController.getPathToTrainingDataset().get("WineQualityRed");
+        String pathToFile = pathToData+ ConfigController.getPathToTrainingDataset().get(dataSetName);
         File file = new File(pathToFile);
         Scanner reader = new Scanner(file);
-        dataSet1 = new LinkedList<>();
+        trainingDataSet = new LinkedList<>();
         double numberOfLines =0;
-        dataSet1Name = pathToFile.substring(pathToFile.lastIndexOf("\\")+1, pathToFile.lastIndexOf("."));
-        double counterOfLines = ConfigController.getSizeOfDataset().get(dataSet1Name);
-        sizeOfBatchForDataset1 = (int) Math.round(counterOfLines/(ConfigController.getNumberOfBatch()));
+        dataSetTrainingName = dataSetName+"_tr";
+        double counterOfLines = ConfigController.getSizeOfDataset().get(dataSetTrainingName);
+        trainingSizeOfBatchForDataset = (int) Math.round(counterOfLines/(ConfigController.getNumberOfBatch()));
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
             if (!line.isEmpty()){
@@ -48,21 +51,22 @@ public class SourceTaskDataController extends DataController{
                         dataLine.put(attributeName, number);
                     }
                 }
-                dataSet1.add(dataLine);
-                printProgress(numberOfLines, counterOfLines, dataSet1Name);
+                trainingDataSet.add(dataLine);
+                printProgress(numberOfLines, counterOfLines, dataSetName+" training");
             }
         }
         reader.close();
         System.out.println();
 
-        pathToFile = pathToData+ConfigController.getPathToTrainingDataset().get("WineQualityWhite");
+        pathToFile = pathToData+ConfigController.getPathToTestingDataset().get(dataSetName);
         file = new File(pathToFile);
         reader = new Scanner(file);
-        dataSet2 = new LinkedList<>();
+        dataSetTestingName = dataSetName+"_ts";
+        this.dataSetName=dataSetTestingName;
+        testingDataSet = new LinkedList<>();
         numberOfLines =0;
-        dataSet2Name = pathToFile.substring(pathToFile.lastIndexOf("\\")+1, pathToFile.lastIndexOf("."));
-        counterOfLines = ConfigController.getSizeOfDataset().get(dataSet2Name);
-        sizeOfBatchForDataset2 = (int) Math.round(counterOfLines/(ConfigController.getNumberOfBatch()));
+        counterOfLines = ConfigController.getSizeOfDataset().get(dataSetTestingName);
+        testingSizeOfBatchForDataset = (int) Math.round(counterOfLines/(ConfigController.getNumberOfBatch()));
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
             if (!line.isEmpty()){
@@ -87,26 +91,27 @@ public class SourceTaskDataController extends DataController{
                         dataLine.put(attributeName, number);
                     }
                 }
-                dataSet2.add(dataLine);
-                printProgress(numberOfLines, counterOfLines, dataSet2Name);
+                testingDataSet.add(dataLine);
+                printProgress(numberOfLines, counterOfLines, dataSetName+" testing");
             }
         }
         reader.close();
         System.out.println();
-        dataSetName = dataSet2Name;
         chanceMod();
     }
 
     @Override
     public void chanceMod() {
-        if (dataSetName.equals(dataSet1Name)){
-            dataSetName = dataSet2Name;
-            dataSet = dataSet2;
-            sizeOfBatchForDataset = sizeOfBatchForDataset2;
+        if (dataSetName.equals(dataSetName)){
+            dataSet = testingDataSet;
+            sizeOfBatchForDataset = testingSizeOfBatchForDataset;
+            this.dataSetName=dataSetTestingName;
         }else{
-            dataSetName = dataSet1Name;
-            dataSet = dataSet1;
-            sizeOfBatchForDataset = sizeOfBatchForDataset1;
+            dataSet = trainingDataSet;
+            sizeOfBatchForDataset = trainingSizeOfBatchForDataset;
+            this.dataSetName=dataSetTrainingName;
         }
     }
+
+
 }

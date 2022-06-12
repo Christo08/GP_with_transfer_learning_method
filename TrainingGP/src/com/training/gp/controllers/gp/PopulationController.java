@@ -1,5 +1,8 @@
-package com.training.gp.controller;
+package com.training.gp.controllers.gp;
 
+
+import com.training.gp.controllers.ConfigController;
+import com.training.gp.data.objects.Chromosomes;
 
 import java.util.*;
 

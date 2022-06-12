@@ -1,4 +1,4 @@
-package com.training.gp.controller;
+package com.training.gp.controllers;
 
 import java.util.HashMap;
 import java.util.Map;

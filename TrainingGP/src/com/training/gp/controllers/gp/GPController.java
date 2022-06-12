@@ -1,4 +1,10 @@
-package com.training.gp.controller;
+package com.training.gp.controllers.gp;
+
+import com.training.gp.controllers.ConfigController;
+import com.training.gp.controllers.data.DataController;
+import com.training.gp.controllers.data.SourceTaskDataController;
+import com.training.gp.controllers.data.TargetTaskDataController;
+import com.training.gp.data.objects.Chromosomes;
 
 import java.io.FileNotFoundException;
 import java.util.*;
@@ -31,7 +37,7 @@ public class GPController {
         Chromosomes bestChromosomes = populationController.getChromosomes(findBestChromosomes());
         double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(bestChromosomes);
         int counterChange =0;
-        for (int counter = 0; bestChromosomesAccuracy < ConfigController.getMinAccuracy();counter++){
+        for (int counter = 0; bestChromosomesAccuracy < ConfigController.getMinAccuracy(); counter++){
             List<Chromosomes> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
             newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getReproductionSize())));
 

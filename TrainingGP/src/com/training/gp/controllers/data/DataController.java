@@ -1,4 +1,6 @@
-package com.training.gp.controller;
+package com.training.gp.controllers.data;
+
+import com.training.gp.controllers.ConfigController;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;

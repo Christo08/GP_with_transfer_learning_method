@@ -1,7 +1,7 @@
 package com.training.gp;
 
-import com.training.gp.controller.ConfigController;
-import com.training.gp.controller.GPController;
+import com.training.gp.controllers.ConfigController;
+import com.training.gp.controllers.gp.GPController;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;

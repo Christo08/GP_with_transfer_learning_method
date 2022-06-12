@@ -162,7 +162,10 @@ public class Chromosomes {
     }
 
     public int getRandomSubTreeID() {
-        return GPController.getRandom().nextInt(numberOfNodesInTree-1)+1;
+        if (numberOfNodesInTree ==1)
+            return 1;
+        else
+            return GPController.getRandom().nextInt(numberOfNodesInTree-1)+1;
     }
 
     public Chromosomes getSubTree(int ID) {
@@ -214,6 +217,6 @@ public class Chromosomes {
         for (Chromosomes child: children){
             stringOfChildren= stringOfChildren+" ("+child.toString()+")";
         }
-        return "ID: "+nodeID+" {"+symbol+stringOfChildren+"}";
+        return "{"+symbol+stringOfChildren+"}";
     }
 }

@@ -10,29 +10,36 @@ import java.util.*;
 
 public class DataCleaner {
 
-    static Map<String, String> dryBeamClassesMap;
-    static Map<String, String> irisClassesMap;
-    static List<Map<Character, String>> mushroomAttributesMap;
+    private static Map<String, String> dryBeamClassesMap;
+    private static Map<String, String> irisClassesMap;
+    private static Map<String, String> avilaClassesMap;
 
-    static NumberFormat formatter;
+    private static NumberFormat formatter;
 
-    static String pathToRawDataFolder;
-    static String pathToCleanDataFolder;
+    private static String pathToRawDataFolder;
+    private static String pathToCleanDataFolder;
+
+    private static Random random;
+
+    private static double percentOfTrainingData =0.25;
 
     public static void main(String[] args) {
         pathToRawDataFolder = args[0];
         pathToCleanDataFolder = args[1];
         formatter = new DecimalFormat("#0.00");
 
+        random = new Random();
+        random.setSeed(10);
+
         initialiseMaps();
+
+        cleanAvilaSet();
+        System.out.println();
 
         cleanDryBeamDataSet();
         System.out.println();
 
         cleanIrisDataSet();
-        System.out.println();
-
-        cleanMushroomDataSet();
         System.out.println();
 
         cleanSeedsDataSet();
@@ -44,7 +51,6 @@ public class DataCleaner {
         cleanWhiteWineDataSet();
         System.out.println();
     }
-
     private static void initialiseMaps() {
         dryBeamClassesMap = new HashMap<>();
         dryBeamClassesMap.put("SEKER","1");
@@ -60,205 +66,73 @@ public class DataCleaner {
         irisClassesMap.put("Iris-versicolor","2");
         irisClassesMap.put("Iris-virginica","3");
 
-        mushroomAttributesMap = new LinkedList<>();
+        avilaClassesMap = new HashMap<>();
+        avilaClassesMap.put("A","1");
+        avilaClassesMap.put("B","2");
+        avilaClassesMap.put("C","3");
+        avilaClassesMap.put("D","4");
+        avilaClassesMap.put("E","5");
+        avilaClassesMap.put("F","6");
+        avilaClassesMap.put("G","7");
+        avilaClassesMap.put("H","8");
+        avilaClassesMap.put("I","9");
+        avilaClassesMap.put("W","10");
+        avilaClassesMap.put("X","11");
+        avilaClassesMap.put("Y","12");
 
-        Map<Character,String> mushroomCapShapeMap = new HashMap<>();
-        mushroomCapShapeMap.put('b',"1");
-        mushroomCapShapeMap.put('c',"2");
-        mushroomCapShapeMap.put('x',"3");
-        mushroomCapShapeMap.put('f',"4");
-        mushroomCapShapeMap.put('k',"5");
-        mushroomCapShapeMap.put('s',"6");
-        mushroomAttributesMap.add(mushroomCapShapeMap);
+    }
 
-        Map<Character,String> mushroomCapSurfaceMap = new HashMap<>();
-        mushroomCapSurfaceMap.put('f',"1");
-        mushroomCapSurfaceMap.put('g',"2");
-        mushroomCapSurfaceMap.put('y',"3");
-        mushroomCapSurfaceMap.put('s',"4");
-        mushroomAttributesMap.add(mushroomCapSurfaceMap);
+    private static void cleanAvilaSet() {
+        try {
+            String pathsToRawAvilaDataset = pathToRawDataFolder+"\\Avila\\avila.txt";
+            File avilaFile = new File(pathsToRawAvilaDataset);
+            Scanner avilaReader = new Scanner(avilaFile);
 
-        Map<Character,String> mushroomCapColorMap = new HashMap<>();
-        mushroomCapColorMap.put('n',"1");
-        mushroomCapColorMap.put('b',"2");
-        mushroomCapColorMap.put('c',"3");
-        mushroomCapColorMap.put('g',"4");
-        mushroomCapColorMap.put('r',"5");
-        mushroomCapColorMap.put('p',"6");
-        mushroomCapColorMap.put('u',"7");
-        mushroomCapColorMap.put('e',"8");
-        mushroomCapColorMap.put('w',"9");
-        mushroomCapColorMap.put('y',"10");
-        mushroomAttributesMap.add(mushroomCapColorMap);
+            String outputTesting ="";
+            String outputTraining ="";
 
-        Map<Character,String> mushroomBruisesMap = new HashMap<>();
-        mushroomBruisesMap.put('t',"1");
-        mushroomBruisesMap.put('f',"2");
-        mushroomAttributesMap.add(mushroomBruisesMap);
+            int numberOfTotalLines = 20867;
+            List<Integer> lineNumberOfTestingData = getLineNumberOfTestingData((int) Math.round(numberOfTotalLines * percentOfTrainingData), numberOfTotalLines);
 
-        Map<Character,String> mushroomOdorMap = new HashMap<>();
-        mushroomOdorMap.put('a',"1");
-        mushroomOdorMap.put('l',"2");
-        mushroomOdorMap.put('c',"3");
-        mushroomOdorMap.put('y',"4");
-        mushroomOdorMap.put('f',"5");
-        mushroomOdorMap.put('m',"6");
-        mushroomOdorMap.put('n',"7");
-        mushroomOdorMap.put('p',"8");
-        mushroomOdorMap.put('s',"9");
-        mushroomAttributesMap.add(mushroomOdorMap);
+            int numberOfLines =0;
 
-        Map<Character,String> mushroomGillAttachmentMap = new HashMap<>();
-        mushroomGillAttachmentMap.put('a',"1");
-        mushroomGillAttachmentMap.put('d',"2");
-        mushroomGillAttachmentMap.put('f',"3");
-        mushroomGillAttachmentMap.put('n',"4");
-        mushroomAttributesMap.add(mushroomGillAttachmentMap);
+            while (avilaReader.hasNextLine()){
+                String line = avilaReader.nextLine().trim();
+                if (numberOfLines != 0)
+                {
+                    if (!line.isEmpty()){
+                        List<String> splitLine = Arrays.asList(line.split(","));
+                        splitLine.set(splitLine.size()-1, avilaClassesMap.get(splitLine.get(splitLine.size()-1)));
+                        if (lineNumberOfTestingData.contains(numberOfLines-1)){
+                            outputTesting += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
+                        }else {
+                            outputTraining += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
+                        }
+                        printProgress(numberOfLines, numberOfTotalLines, "avila");
+                    }
+                }
+                numberOfLines++;
+            }
+            avilaReader.close();
 
-        Map<Character,String> mushroomGillSpacingMap = new HashMap<>();
-        mushroomGillSpacingMap.put('c',"1");
-        mushroomGillSpacingMap.put('w',"2");
-        mushroomGillSpacingMap.put('d',"3");
-        mushroomAttributesMap.add(mushroomGillSpacingMap);
+            String pathsToCleanAvilaTestingDataset = pathToCleanDataFolder+"\\Avila\\avila_ts.txt";
+            File cleanAvilaTestingFile = new File(pathsToCleanAvilaTestingDataset);
+            cleanAvilaTestingFile.createNewFile();
+            FileWriter dryBeamTestingWriter = new FileWriter(cleanAvilaTestingFile);
+            dryBeamTestingWriter.write(outputTesting);
+            dryBeamTestingWriter.close();
 
-        Map<Character,String> mushroomGillSizeMap = new HashMap<>();
-        mushroomGillSizeMap.put('b',"1");
-        mushroomGillSizeMap.put('n',"2");
-        mushroomAttributesMap.add(mushroomGillSizeMap);
-
-        Map<Character,String> mushroomGillColorMap = new HashMap<>();
-        mushroomGillColorMap.put('k',"1");
-        mushroomGillColorMap.put('n',"2");
-        mushroomGillColorMap.put('b',"3");
-        mushroomGillColorMap.put('h',"4");
-        mushroomGillColorMap.put('g',"5");
-        mushroomGillColorMap.put('r',"6");
-        mushroomGillColorMap.put('o',"7");
-        mushroomGillColorMap.put('p',"8");
-        mushroomGillColorMap.put('u',"9");
-        mushroomGillColorMap.put('e',"10");
-        mushroomGillColorMap.put('w',"11");
-        mushroomGillColorMap.put('y',"12");
-        mushroomAttributesMap.add(mushroomGillColorMap);
-
-        Map<Character,String> mushroomStalkShapeMap = new HashMap<>();
-        mushroomStalkShapeMap.put('e',"1");
-        mushroomStalkShapeMap.put('t',"2");
-        mushroomAttributesMap.add(mushroomStalkShapeMap);
-
-        Map<Character,String> mushroomStalkRootMap = new HashMap<>();
-        mushroomStalkRootMap.put('b',"1");
-        mushroomStalkRootMap.put('c',"2");
-        mushroomStalkRootMap.put('u',"3");
-        mushroomStalkRootMap.put('e',"4");
-        mushroomStalkRootMap.put('z',"5");
-        mushroomStalkRootMap.put('r',"6");
-        mushroomStalkRootMap.put('?',"-1");
-        mushroomAttributesMap.add(mushroomStalkRootMap);
-
-        Map<Character,String> mushroomStalkSurfaceAboveRingMap = new HashMap<>();
-        mushroomStalkSurfaceAboveRingMap.put('f',"1");
-        mushroomStalkSurfaceAboveRingMap.put('y',"2");
-        mushroomStalkSurfaceAboveRingMap.put('k',"3");
-        mushroomStalkSurfaceAboveRingMap.put('s',"4");
-        mushroomAttributesMap.add(mushroomStalkSurfaceAboveRingMap);
-
-        Map<Character,String> mushroomStalkSurfaceBelowRingMap = new HashMap<>();
-        mushroomStalkSurfaceBelowRingMap.put('f',"1");
-        mushroomStalkSurfaceBelowRingMap.put('y',"2");
-        mushroomStalkSurfaceBelowRingMap.put('k',"3");
-        mushroomStalkSurfaceBelowRingMap.put('s',"4");
-        mushroomAttributesMap.add(mushroomStalkSurfaceBelowRingMap);
-
-        Map<Character,String> mushroomStalkColorAboveRingMap = new HashMap<>();
-        mushroomStalkColorAboveRingMap.put('n',"1");
-        mushroomStalkColorAboveRingMap.put('b',"2");
-        mushroomStalkColorAboveRingMap.put('c',"3");
-        mushroomStalkColorAboveRingMap.put('g',"4");
-        mushroomStalkColorAboveRingMap.put('o',"5");
-        mushroomStalkColorAboveRingMap.put('p',"6");
-        mushroomStalkColorAboveRingMap.put('e',"7");
-        mushroomStalkColorAboveRingMap.put('w',"8");
-        mushroomStalkColorAboveRingMap.put('y',"9");
-        mushroomAttributesMap.add(mushroomStalkColorAboveRingMap);
-
-        Map<Character,String> mushroomStalkColorBelowRingMap = new HashMap<>();
-        mushroomStalkColorBelowRingMap.put('n',"1");
-        mushroomStalkColorBelowRingMap.put('b',"2");
-        mushroomStalkColorBelowRingMap.put('c',"3");
-        mushroomStalkColorBelowRingMap.put('g',"4");
-        mushroomStalkColorBelowRingMap.put('o',"5");
-        mushroomStalkColorBelowRingMap.put('p',"6");
-        mushroomStalkColorBelowRingMap.put('e',"7");
-        mushroomStalkColorBelowRingMap.put('w',"8");
-        mushroomStalkColorBelowRingMap.put('y',"9");
-        mushroomAttributesMap.add(mushroomStalkColorBelowRingMap);
-
-        Map<Character,String> mushroomVeilTypeMap = new HashMap<>();
-        mushroomVeilTypeMap.put('p',"1");
-        mushroomVeilTypeMap.put('u',"2");
-        mushroomAttributesMap.add(mushroomVeilTypeMap);
-
-        Map<Character,String> mushroomVeilColorMap = new HashMap<>();
-        mushroomVeilColorMap.put('n',"1");
-        mushroomVeilColorMap.put('o',"2");
-        mushroomVeilColorMap.put('w',"3");
-        mushroomVeilColorMap.put('y',"4");
-        mushroomAttributesMap.add(mushroomVeilColorMap);
-
-        Map<Character,String> mushroomRingNumberMap = new HashMap<>();
-        mushroomRingNumberMap.put('n',"1");
-        mushroomRingNumberMap.put('o',"2");
-        mushroomRingNumberMap.put('t',"3");
-        mushroomAttributesMap.add(mushroomRingNumberMap);
-
-        Map<Character,String> mushroomRingTypeMap = new HashMap<>();
-        mushroomRingTypeMap.put('c',"1");
-        mushroomRingTypeMap.put('e',"2");
-        mushroomRingTypeMap.put('f',"3");
-        mushroomRingTypeMap.put('l',"4");
-        mushroomRingTypeMap.put('n',"5");
-        mushroomRingTypeMap.put('p',"6");
-        mushroomRingTypeMap.put('s',"7");
-        mushroomRingTypeMap.put('z',"8");
-        mushroomAttributesMap.add(mushroomRingTypeMap);
-
-        Map<Character,String> mushroomSporePrintColorMap = new HashMap<>();
-        mushroomSporePrintColorMap.put('k',"1");
-        mushroomSporePrintColorMap.put('n',"2");
-        mushroomSporePrintColorMap.put('b',"3");
-        mushroomSporePrintColorMap.put('h',"4");
-        mushroomSporePrintColorMap.put('r',"5");
-        mushroomSporePrintColorMap.put('o',"6");
-        mushroomSporePrintColorMap.put('u',"7");
-        mushroomSporePrintColorMap.put('w',"8");
-        mushroomSporePrintColorMap.put('y',"9");
-        mushroomAttributesMap.add(mushroomSporePrintColorMap);
-
-        Map<Character,String> mushroomPopulationMap = new HashMap<>();
-        mushroomPopulationMap.put('a',"1");
-        mushroomPopulationMap.put('c',"2");
-        mushroomPopulationMap.put('n',"3");
-        mushroomPopulationMap.put('s',"4");
-        mushroomPopulationMap.put('v',"5");
-        mushroomPopulationMap.put('y',"6");
-        mushroomAttributesMap.add(mushroomPopulationMap);
-
-        Map<Character,String> mushroomHabitatMap = new HashMap<>();
-        mushroomHabitatMap.put('g',"1");
-        mushroomHabitatMap.put('l',"2");
-        mushroomHabitatMap.put('m',"3");
-        mushroomHabitatMap.put('p',"4");
-        mushroomHabitatMap.put('u',"5");
-        mushroomHabitatMap.put('w',"6");
-        mushroomHabitatMap.put('d',"7");
-        mushroomAttributesMap.add(mushroomHabitatMap);
-
-        Map<Character,String> mushroomClassesMap = new HashMap<>();
-        mushroomClassesMap.put('e',"1");
-        mushroomClassesMap.put('p',"2");
-        mushroomAttributesMap.add(mushroomClassesMap);
-
+            String pathsToCleanAvilaTrainingDataset = pathToCleanDataFolder+"\\Avila\\avila_tr.txt";
+            File cleanAvilaTrainingFile = new File(pathsToCleanAvilaTrainingDataset);
+            cleanAvilaTrainingFile.createNewFile();
+            FileWriter dryBeamTrainingWriter = new FileWriter(cleanAvilaTrainingFile);
+            dryBeamTrainingWriter.write(outputTraining);
+            dryBeamTrainingWriter.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("Can not open dry beam data set.");
+        } catch (IOException e) {
+            System.out.println("Can not create dry beam data set file.");
+        }
     }
 
     private static void cleanDryBeamDataSet() {
@@ -266,8 +140,15 @@ public class DataCleaner {
             String pathsToRawDryBeamDataset = pathToRawDataFolder+"\\DryBeanDataset\\Dry_Bean_Dataset.csv";
             File dryBeamFile = new File(pathsToRawDryBeamDataset);
             Scanner dryBeamReader = new Scanner(dryBeamFile);
-            String output ="";
-            double numberOfLines =0;
+
+            String outputTesting ="";
+            String outputTraining ="";
+
+            int numberOfTotalLines = 13611;
+            List<Integer> lineNumberOfTestingData = getLineNumberOfTestingData((int) Math.round(numberOfTotalLines * percentOfTrainingData), numberOfTotalLines);
+
+            int numberOfLines =0;
+
             while (dryBeamReader.hasNextLine()){
                 String line = dryBeamReader.nextLine().trim();
                 if (numberOfLines != 0)
@@ -275,20 +156,31 @@ public class DataCleaner {
                     if (!line.isEmpty()){
                         List<String> splitLine = Arrays.asList(line.split(","));
                         splitLine.set(splitLine.size()-1, dryBeamClassesMap.get(splitLine.get(splitLine.size()-1)));
-                        output += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
-                        printProgress(numberOfLines, 13611, "dry beam");
+                        if (lineNumberOfTestingData.contains(numberOfLines-1)){
+                            outputTesting += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
+                        }else {
+                            outputTraining += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
+                        }
+                        printProgress(numberOfLines, numberOfTotalLines, "dry beam");
                     }
                 }
                 numberOfLines++;
             }
             dryBeamReader.close();
 
-            String pathsToCleanDryBeamDataset = pathToCleanDataFolder+"\\DryBeanDataset\\dryBeam.txt";
-            File cleanDryBeamFile = new File(pathsToCleanDryBeamDataset);
-            cleanDryBeamFile.createNewFile();
-            FileWriter dryBeamWriter = new FileWriter(cleanDryBeamFile);
-            dryBeamWriter.write(output);
-            dryBeamWriter.close();
+            String pathsToCleanDryBeamTestingDataset = pathToCleanDataFolder+"\\DryBeanDataset\\dryBeam_ts.txt";
+            File cleanDryBeamTestingFile = new File(pathsToCleanDryBeamTestingDataset);
+            cleanDryBeamTestingFile.createNewFile();
+            FileWriter dryBeamTestingWriter = new FileWriter(cleanDryBeamTestingFile);
+            dryBeamTestingWriter.write(outputTesting);
+            dryBeamTestingWriter.close();
+
+            String pathsToCleanDryBeamTrainingDataset = pathToCleanDataFolder+"\\DryBeanDataset\\dryBeam_tr.txt";
+            File cleanDryBeamTrainingFile = new File(pathsToCleanDryBeamTrainingDataset);
+            cleanDryBeamTrainingFile.createNewFile();
+            FileWriter dryBeamTrainingWriter = new FileWriter(cleanDryBeamTrainingFile);
+            dryBeamTrainingWriter.write(outputTraining);
+            dryBeamTrainingWriter.close();
         } catch (FileNotFoundException e) {
             System.out.println("Can not open dry beam data set.");
         } catch (IOException e) {
@@ -301,78 +193,48 @@ public class DataCleaner {
             String pathsToRawIrisDataset = pathToRawDataFolder+"\\Iris\\iris.data";
             File irisFile = new File(pathsToRawIrisDataset);
             Scanner irisReader = new Scanner(irisFile);
-            String output ="";
-            long numberOfLines =0;
+
+            String outputTesting ="";
+            String outputTraining ="";
+
+            int numberOfTotalLines = 150;
+            List<Integer> lineNumberOfTestingData = getLineNumberOfTestingData((int) Math.round(numberOfTotalLines * percentOfTrainingData), numberOfTotalLines);
+
+            int numberOfLines =0;
+
             while (irisReader.hasNextLine()){
                 String line = irisReader.nextLine().trim();
                 if (!line.isEmpty()){
                     numberOfLines++;
                     List<String> splitLine = Arrays.asList(line.split(","));
                     splitLine.set(splitLine.size()-1, irisClassesMap.get(splitLine.get(splitLine.size()-1)));
-                    output += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
-                    printProgress(numberOfLines, 150, "iris");
+                    if (lineNumberOfTestingData.contains(numberOfLines-1)){
+                        outputTesting += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
+                    }else {
+                        outputTraining += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
+                    }
+                    printProgress(numberOfLines, numberOfTotalLines, "iris");
                 }
             }
             irisReader.close();
 
-            String pathsToCleanIrisDataset = pathToCleanDataFolder+"\\Iris\\iris.txt";
-            File cleanIrisFile = new File(pathsToCleanIrisDataset);
-            cleanIrisFile.createNewFile();
-            FileWriter irisWriter = new FileWriter(cleanIrisFile);
-            irisWriter.write(output);
-            irisWriter.close();
+            String pathsToCleanIrisTestingDataset = pathToCleanDataFolder+"\\Iris\\iris_ts.txt";
+            File cleanIrisTestingFile = new File(pathsToCleanIrisTestingDataset);
+            cleanIrisTestingFile.createNewFile();
+            FileWriter irisTestingWriter = new FileWriter(cleanIrisTestingFile);
+            irisTestingWriter.write(outputTesting);
+            irisTestingWriter.close();
+
+            String pathsToCleanIrisTrainingDataset = pathToCleanDataFolder+"\\Iris\\iris_tr.txt";
+            File cleanIrisTrainingFile = new File(pathsToCleanIrisTrainingDataset);
+            cleanIrisTrainingFile.createNewFile();
+            FileWriter irisTrainingWriter = new FileWriter(cleanIrisTrainingFile);
+            irisTrainingWriter.write(outputTraining);
+            irisTrainingWriter.close();
         } catch (FileNotFoundException e) {
             System.out.println("Can not open iris data set.");
         } catch (IOException e) {
             System.out.println("Can not create iris data set file.");
-        }
-    }
-
-    private static void cleanMushroomDataSet() {
-        try {
-            String pathsToRawMushroomDataset = pathToRawDataFolder+"\\Mushroom\\mushroom.data";
-            File mushroomFile = new File(pathsToRawMushroomDataset);
-            Scanner mushroomReader = new Scanner(mushroomFile);
-            String output ="";
-            double numberOfLines =0;
-            while (mushroomReader.hasNextLine()){
-                String line = mushroomReader.nextLine().trim();
-
-                if (!line.isEmpty()){
-                    List<String> splitLine = Arrays.asList(line.split(","));
-                    List<Character> characters =new ArrayList<>();
-                    for (int counter =1; counter < splitLine.size(); counter++)
-                    {
-                        characters.add(splitLine.get(counter).charAt(0));
-                    }
-                    characters.add(splitLine.get(0).charAt(0));
-
-                    String newLine="";
-                    for (int counter =0; counter < characters.size(); counter++)
-                    {
-                        newLine += mushroomAttributesMap.get(counter).get(characters.get(counter));
-                        if (counter < characters.size()-1)
-                        {
-                            newLine+=",";
-                        }
-                    }
-                    output += newLine+"\n";
-                }
-                numberOfLines++;
-                printProgress(numberOfLines, 8124, "mushroom");
-            }
-            mushroomReader.close();
-
-            String pathsToCleanMushroomDataset = pathToCleanDataFolder+"\\Mushroom\\mushroom.txt";
-            File cleanMushroomFile = new File(pathsToCleanMushroomDataset);
-            cleanMushroomFile.createNewFile();
-            FileWriter mushroomWriter = new FileWriter(cleanMushroomFile);
-            mushroomWriter.write(output);
-            mushroomWriter.close();
-        } catch (FileNotFoundException e) {
-            System.out.println("Can not open dry beam data set.");
-        } catch (IOException e) {
-            System.out.println("Can not create dry beam data set file.");
         }
     }
 
@@ -381,24 +243,43 @@ public class DataCleaner {
             String pathsToRawSeedsDataset = pathToRawDataFolder+"\\Seeds\\seeds_dataset.txt";
             File seedsFile = new File(pathsToRawSeedsDataset);
             Scanner seedsReader = new Scanner(seedsFile);
-            String output ="";
-            long numberOfLines =0;
+
+            String outputTesting ="";
+            String outputTraining ="";
+
+            int numberOfTotalLines = 210;
+            List<Integer> lineNumberOfTestingData = getLineNumberOfTestingData((int) Math.round(numberOfTotalLines * percentOfTrainingData), numberOfTotalLines);
+
+            int numberOfLines =0;
+
             while (seedsReader.hasNextLine()){
                 String line = seedsReader.nextLine().trim();
                 if (!line.isEmpty()){
                     numberOfLines++;
-                    output +=line.replaceAll("\t",",")+"\n";
-                    printProgress(numberOfLines, 210, "seeds");
+                    if (lineNumberOfTestingData.contains(numberOfLines-1)){
+                        outputTesting += line.replaceAll("\t",",")+"\n";
+                    }else {
+                        outputTraining += line.replaceAll("\t",",")+"\n";
+                    }
+                    printProgress(numberOfLines, numberOfTotalLines, "seeds");
                 }
             }
             seedsReader.close();
 
-            String pathsToCleanSeedsDataset = pathToCleanDataFolder+"\\Seeds\\seeds.txt";
-            File cleanSeedsFile = new File(pathsToCleanSeedsDataset);
-            cleanSeedsFile.createNewFile();
-            FileWriter seedsWriter = new FileWriter(cleanSeedsFile);
-            seedsWriter.write(output);
-            seedsWriter.close();
+            String pathsToCleanSeedsTestingDataset = pathToCleanDataFolder+"\\Seeds\\seeds_ts.txt";
+            File cleanSeedsTestingFile = new File(pathsToCleanSeedsTestingDataset);
+            cleanSeedsTestingFile.createNewFile();
+            FileWriter seedsTestingWriter = new FileWriter(cleanSeedsTestingFile);
+            seedsTestingWriter.write(outputTesting);
+            seedsTestingWriter.close();
+
+            String pathsToCleanSeedsTrainingDataset = pathToCleanDataFolder+"\\Seeds\\seeds_tr.txt";
+            File cleanSeedsTrainingFile = new File(pathsToCleanSeedsTrainingDataset);
+            cleanSeedsTrainingFile.createNewFile();
+            FileWriter seedsTrainingWriter = new FileWriter(cleanSeedsTrainingFile);
+            seedsTrainingWriter.write(outputTraining);
+            seedsTrainingWriter.close();
+
         } catch (FileNotFoundException e) {
             System.out.println("Can not open seeds data set.");
         } catch (IOException e) {
@@ -411,22 +292,27 @@ public class DataCleaner {
             String pathsToRawWineQualityRedDataset = pathToRawDataFolder+"\\Wine\\winequality-red.csv";
             File wineQualityRedFile = new File(pathsToRawWineQualityRedDataset);
             Scanner wineQualityRedReader = new Scanner(wineQualityRedFile);
+
             String output ="";
-            double numberOfLines =0;
+
+            int numberOfTotalLines = 1599;
+
+            int numberOfLines =0;
+
             while (wineQualityRedReader.hasNextLine()){
                 String line = wineQualityRedReader.nextLine().trim();
                 if (numberOfLines != 0)
                 {
                     if (!line.isEmpty()){
                         output += line+"\n";
-                        printProgress(numberOfLines, 1599, "wine quality red");
+                        printProgress(numberOfLines, numberOfTotalLines, "wine quality red");
                     }
                 }
                 numberOfLines++;
             }
             wineQualityRedReader.close();
 
-            String pathsToCleanWineQualityRedDataset = pathToCleanDataFolder+"\\Wine\\wineQualityRed.txt";
+            String pathsToCleanWineQualityRedDataset = pathToCleanDataFolder+"\\WineRed\\wineQualityRed.txt";
             File cleanWineQualityRedFile = new File(pathsToCleanWineQualityRedDataset);
             cleanWineQualityRedFile.createNewFile();
             FileWriter wineQualityRedWriter = new FileWriter(cleanWineQualityRedFile);
@@ -444,27 +330,33 @@ public class DataCleaner {
             String pathsToRawWineQualityWhiteDataset = pathToRawDataFolder+"\\Wine\\winequality-white.csv";
             File wineQualityWhiteFile = new File(pathsToRawWineQualityWhiteDataset);
             Scanner wineQualityWhiteReader = new Scanner(wineQualityWhiteFile);
+
             String output ="";
-            double numberOfLines =0;
+
+            int numberOfTotalLines = 4898;
+
+            int numberOfLines =0;
+
             while (wineQualityWhiteReader.hasNextLine()){
                 String line = wineQualityWhiteReader.nextLine().trim();
                 if (numberOfLines != 0)
                 {
                     if (!line.isEmpty()){
                         output += line+"\n";
-                        printProgress(numberOfLines, 4898, "wine quality white");
+                        printProgress(numberOfLines, numberOfTotalLines, "wine quality white");
                     }
                 }
                 numberOfLines++;
             }
             wineQualityWhiteReader.close();
 
-            String pathsToCleanWineQualityWhiteDataset = pathToCleanDataFolder+"\\Wine\\wineQualityWhite.txt";
+            String pathsToCleanWineQualityWhiteDataset = pathToCleanDataFolder+"\\WineWhite\\wineQualityWhite.txt";
             File cleanWineQualityWhiteFile = new File(pathsToCleanWineQualityWhiteDataset);
             cleanWineQualityWhiteFile.createNewFile();
             FileWriter wineQualityWhiteWriter = new FileWriter(cleanWineQualityWhiteFile);
             wineQualityWhiteWriter.write(output);
             wineQualityWhiteWriter.close();
+
         } catch (FileNotFoundException e) {
             System.out.println("Can not open wine quality white data set.");
         } catch (IOException e) {
@@ -483,5 +375,17 @@ public class DataCleaner {
               .append(" dataset cleaned.");
 
         System.out.print(string);
+    }
+
+    private static List<Integer> getLineNumberOfTestingData(int numberOfTestingLines, int totalNumberOfLines) {
+        List<Integer> lineNumbers = new LinkedList<>();
+        int lineNumber;
+        while (lineNumbers.size() < numberOfTestingLines){
+            do {
+                lineNumber = random.nextInt(totalNumberOfLines);
+            }while (lineNumbers.contains(lineNumber));
+            lineNumbers.add(lineNumber);
+        }
+        return lineNumbers;
     }
 }

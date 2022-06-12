@@ -10,14 +10,18 @@ public class GPController {
     private PopulationController populationController;
     private SDRSController sdrsController;
     private long startTime;
-    private double oldbestChromosomesAccuracy;
+    private double oldBestChromosomesAccuracy;
 
-    public GPController(String pathToData) throws FileNotFoundException {
+    public GPController(String pathToData, String dataSetName, int mod) throws FileNotFoundException {
         long seed = random.nextLong();
         random.setSeed(seed);
         System.out.println("Seed: "+ seed);
 
-        this.dataController = new DataController(pathToData);
+        if (mod == 1)
+            this.dataController = new SourceTaskDataController(pathToData);
+        else
+            this.dataController = new TargetTaskDataController(pathToData,dataSetName);
+
         this.populationController = new PopulationController();
         this.sdrsController = new SDRSController(this, dataController, populationController);
     }
@@ -46,12 +50,12 @@ public class GPController {
             }
             populationController.setChromosomes(newChromosomes);
 
-            oldbestChromosomesAccuracy = bestChromosomesAccuracy;
+            oldBestChromosomesAccuracy = bestChromosomesAccuracy;
             bestChromosomes = populationController.getChromosomes(findBestChromosomes());
             bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(bestChromosomes);
 
             System.out.println("Generations "+counter+" best chromosome's accuracy "+(bestChromosomesAccuracy *100)+"% Number of times the same: "+counterChange);
-            if (bestChromosomesAccuracy != oldbestChromosomesAccuracy)
+            if (bestChromosomesAccuracy != oldBestChromosomesAccuracy)
                 counterChange =0;
             else
                 counterChange++;

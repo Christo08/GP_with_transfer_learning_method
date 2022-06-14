@@ -97,12 +97,15 @@ public class TargetTaskDataController extends DataController {
         }
         reader.close();
         System.out.println();
-        chanceMod();
+
+        dataSet = trainingDataSet;
+        sizeOfBatchForDataset = trainingSizeOfBatchForDataset;
+        this.dataSetName=dataSetTrainingName;
     }
 
     @Override
     public void chanceMod() {
-        if (dataSetName.equals(dataSetName)){
+        if (dataSetTrainingName.equals(dataSetName)){
             dataSet = testingDataSet;
             sizeOfBatchForDataset = testingSizeOfBatchForDataset;
             this.dataSetName=dataSetTestingName;

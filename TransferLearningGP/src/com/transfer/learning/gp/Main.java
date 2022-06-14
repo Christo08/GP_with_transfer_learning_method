@@ -3,12 +3,15 @@ package com.transfer.learning.gp;
 import com.transfer.learning.gp.controllers.ConfigController;
 import com.transfer.learning.gp.controllers.gp.GPController;
 
+import javax.xml.bind.JAXBException;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -22,6 +25,9 @@ public class Main {
             String datasetNames = "";
             int counter = 1;
             List<String> keys = new ArrayList<>(ConfigController.getPathToTestingDataset().keySet());
+            keys = keys.stream()
+                       .sorted(Comparator.naturalOrder())
+                       .collect(Collectors.toList());
             for (String datasetName:keys) {
                 datasetNames += counter+" "+datasetName+"\n";
                 counter++;
@@ -29,14 +35,16 @@ public class Main {
 
             System.out.println("Please enter a number to select a dataset:");
             System.out.print(datasetNames);
-            String datasetName = keys.get(Integer.parseInt(reader.readLine()));
+            String datasetName = keys.get(Integer.parseInt(reader.readLine())-1);
 
             GPController gpController = new GPController(args[0], datasetName, mod);
-            gpController.evolveAnswers();
+            gpController.experiment();
         } catch (FileNotFoundException e) {
             System.out.println("Can not reader the file.");
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JAXBException e) {
             e.printStackTrace();
         }
     }

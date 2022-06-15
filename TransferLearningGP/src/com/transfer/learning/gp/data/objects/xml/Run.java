@@ -21,7 +21,7 @@ public class Run {
     }
 
     public void setAccuracyOnTestingDataset(double accuracyOnTestingDataset) {
-        this.accuracyOnTestingDataset = accuracyOnTestingDataset * 100;
+        this.accuracyOnTestingDataset = accuracyOnTestingDataset;
     }
 
     public int getNumberOfGenerations() {
@@ -37,7 +37,7 @@ public class Run {
     }
 
     public void setAccuracyOnTrainingDataset(double accuracyOnTrainingDataset) {
-        this.accuracyOnTrainingDataset = accuracyOnTrainingDataset * 100;
+        this.accuracyOnTrainingDataset = accuracyOnTrainingDataset;
     }
 
     public int getRunNumber() {

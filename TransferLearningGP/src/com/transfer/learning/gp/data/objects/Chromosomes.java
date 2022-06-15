@@ -1,5 +1,6 @@
 package com.transfer.learning.gp.data.objects;
 
+import com.transfer.learning.gp.controllers.ConfigController;
 import com.transfer.learning.gp.controllers.gp.GPController;
 import com.transfer.learning.gp.controllers.gp.PopulationController;
 
@@ -167,8 +168,13 @@ public class Chromosomes {
     public int getRandomSubTreeID() {
         if (numberOfNodesInTree ==1)
             return 1;
-        else
-            return GPController.getRandom().nextInt(numberOfNodesInTree-1)+1;
+        else{
+            int id = GPController.getRandom().nextInt(numberOfNodesInTree-1)+1;
+            while (id> ConfigController.getMaxDepthOfCrossover()){
+                id = GPController.getRandom().nextInt(numberOfNodesInTree-1)+1;
+            }
+            return id;
+        }
     }
 
     public Chromosomes getSubTree(int ID) {

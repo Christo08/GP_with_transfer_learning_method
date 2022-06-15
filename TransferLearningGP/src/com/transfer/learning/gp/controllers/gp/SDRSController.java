@@ -53,30 +53,23 @@ public class SDRSController {
 
         AtomicInteger totalCounter =new AtomicInteger(0);
         AtomicInteger numberOfThreadsFinished = new AtomicInteger(0);
-        for (int counter1 =0; counter1 < ConfigController.getNumberOfBatch(); counter1++){
-            final int batchIndex = counter1;
-            threadExecutorService.submit(()->{
-                for (Map<String, Double> datum : dataController.getBatchOfData(batchIndex)) {
-                    for (int counter2 =0; counter2< ConfigController.getPopulationSize(); counter2++){
-                        double output = populationController.evaluateChromosomes(datum, counter2);
-                        int slot = (int) Math.round(output);
-                        if (slot <= ConfigController.getStartBondOfSlots())
-                            slot = (int) ConfigController.getStartBondOfSlots();
-                        else  if (slot >= ConfigController.getStopBondOfSlots())
-                            slot = (int) (ConfigController.getStopBondOfSlots()-1);
-                        int slotIndex =ConfigController.getNumberOfSlots()/2 + slot;
-                        int classIndex = (int) Math.round(datum.get("ans"));
-                        double value = array.get(slotIndex).get(classIndex) + gpController.fitnessOfChromosomes(counter2);
-                        array.get(slotIndex).set(classIndex,value );
-                        totalCounter.getAndIncrement();
-                        printProgress(totalCounter.get(), (dataController.getDataSet().size() * ConfigController.getPopulationSize()));
-                    }
-                }
-                numberOfThreadsFinished.getAndIncrement();
-            });
+        for (Map<String, Double> datum : dataController.getDataSet()) {
+            for (int counter2 =0; counter2< ConfigController.getPopulationSize(); counter2++){
+                double output = populationController.evaluateChromosomes(datum, counter2);
+                int slot = (int) Math.round(output);
+                if (slot <= ConfigController.getStartBondOfSlots())
+                    slot = (int) ConfigController.getStartBondOfSlots();
+                else  if (slot >= ConfigController.getStopBondOfSlots())
+                    slot = (int) (ConfigController.getStopBondOfSlots()-1);
+                int slotIndex =ConfigController.getNumberOfSlots()/2 + slot;
+                int classIndex = (int) Math.round(datum.get("ans"));
+                double value = array.get(slotIndex).get(classIndex) + gpController.fitnessOfChromosomes(counter2);
+                array.get(slotIndex).set(classIndex,value );
+                totalCounter.getAndIncrement();
+                printProgress(totalCounter.get(), (dataController.getDataSet().size() * ConfigController.getPopulationSize()));
+            }
         }
 
-        while (numberOfThreadsFinished.get() <4){}
 
         for (Double dKey : keys) {
             double maxValue = array.get(keys.indexOf(dKey)).stream().max(Comparator.naturalOrder()).orElse(0D);

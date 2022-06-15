@@ -17,7 +17,7 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            int mod =1;
+            int mod;
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             System.out.println("Please enter 1 to train the gp with transfer learning or 2 without transfer learning");
             mod = Integer.parseInt(reader.readLine());

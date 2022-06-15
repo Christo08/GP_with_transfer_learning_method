@@ -48,14 +48,15 @@ public class ConfigController {
         put("Seeds","\\Seeds\\seeds_ts.txt");
     }};
     private final static int maxNumberOfGenerations = 1000;
-    private final static double minAccuracy = 90;
+    private final static double minAccuracy = 95;
     private final static int tournamentSize = 4;
     private final static int reproductionSize = 20;
     private final static int crossoverSize = 50;
     private final static int mutationSize = 30;
-    private final static int numberOfGenerationsBeforeEvolveMap = 100;
+    private final static int numberOfGenerationsBeforeEvolveMap = 50;
     private final static int numberOfBatch = 4;
     private final static int numberOfRuns = 20;
+    private static int maxDepthOfCrossover = 100;
 
     public static int getMaxDepth() {
         return maxDepth;
@@ -127,5 +128,9 @@ public class ConfigController {
 
     public static int getNumberOfRuns() {
         return numberOfRuns;
+    }
+
+    public static int getMaxDepthOfCrossover() {
+        return maxDepthOfCrossover;
     }
 }

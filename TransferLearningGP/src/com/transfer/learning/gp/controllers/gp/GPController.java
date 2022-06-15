@@ -51,8 +51,10 @@ public class GPController {
         double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(bestChromosomes);
         int indexOfBestChromosomes =0;
         int counterChange =0;
+        System.out.println("Run "+runNumber);
         try {
-            for (int counter = 0; bestChromosomesAccuracy < ConfigController.getMinAccuracy(); counter++){
+            int counter = 0;
+            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
                 List<Chromosomes> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getReproductionSize())));
 
@@ -68,6 +70,7 @@ public class GPController {
 
                 if (counter != 0 && counter % ConfigController.getNumberOfGenerationsBeforeEvolveMap() ==0){
                     sdrsController.evolveMap();
+                    System.out.println();
                 }
                 populationController.setChromosomes(newChromosomes);
 
@@ -76,25 +79,27 @@ public class GPController {
                 bestChromosomes = populationController.getChromosomes(indexOfBestChromosomes);
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(bestChromosomes);
 
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+(bestChromosomesAccuracy *100)+"% Number of times the same: "+counterChange);
                 if (bestChromosomesAccuracy != oldBestChromosomesAccuracy)
                     counterChange =0;
                 else
                     counterChange++;
-                if (counterChange>= 500) {
+                if (counterChange>= 100) {
                     run.setRunSuccessful(false);
                     break;
                 }
+                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
                 run.setNumberOfGenerations(counter+1);
+                counter = counter+1;
                 // System.out.println(bestChromosomes);
             }
             run.setStopTimeStamp(System.currentTimeMillis());
             run.setAccuracyOnTrainingDataset(bestChromosomesAccuracy);
             run.setAccuracyOnTestingDataset(getAccuracyOnTestingDataset(indexOfBestChromosomes));
+            run.setRunSuccessful(true);
         }catch (Exception exception){
             run.setRunSuccessful(false);
+            exception.printStackTrace();
         }
-        run.setRunSuccessful(true);
         experiment.addRun(run);
         return bestChromosomes;
     }
@@ -157,7 +162,7 @@ public class GPController {
             if (chromosomesOutput.equals(dataLine.get("ans").toString()))
                 numberOfCorrect++;
         }
-        return numberOfCorrect/((double)dataController.getDataSet().size());
+        return numberOfCorrect/((double)dataController.getDataSet().size()) * 100;
     }
 
     private double getAccuracyOnTestingDataset(int counter){
@@ -169,7 +174,7 @@ public class GPController {
                 numberOfCorrect++;
         }
         dataController.chanceMod();
-        return numberOfCorrect/((double)dataController.getDataSet().size());
+        return numberOfCorrect/((double)dataController.getDataSet().size()) * 100;
 
     }
 

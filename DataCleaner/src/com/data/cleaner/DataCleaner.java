@@ -255,6 +255,7 @@ public class DataCleaner {
             while (seedsReader.hasNextLine()){
                 String line = seedsReader.nextLine().trim();
                 if (!line.isEmpty()){
+                    line=line.replaceAll("\t\t","\t");
                     numberOfLines++;
                     if (lineNumberOfTestingData.contains(numberOfLines-1)){
                         outputTesting += line.replaceAll("\t",",")+"\n";

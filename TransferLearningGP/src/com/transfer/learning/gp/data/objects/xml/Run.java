@@ -9,6 +9,7 @@ public class Run {
     private double accuracyOnTrainingDataset;
     private int numberOfGenerations;
     private int runNumber;
+    private long seed;
     private long startTimeStamp;
     private long stopTimeStamp;
     private boolean runSuccessful;
@@ -48,6 +49,14 @@ public class Run {
         this.runNumber = runNumber;
     }
 
+    public long getSeed() {
+        return seed;
+    }
+
+    public void setSeed(long seed) {
+        this.seed = seed;
+    }
+
     public long getStartTimeStamp() {
         return startTimeStamp;
     }
@@ -71,4 +80,5 @@ public class Run {
     public void setRunSuccessful(boolean runSuccessful) {
         this.runSuccessful = runSuccessful;
     }
+
 }

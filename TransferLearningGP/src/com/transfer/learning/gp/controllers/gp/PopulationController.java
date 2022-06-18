@@ -2,7 +2,7 @@ package com.transfer.learning.gp.controllers.gp;
 
 
 import com.transfer.learning.gp.controllers.ConfigController;
-import com.transfer.learning.gp.data.objects.Chromosomes;
+import com.transfer.learning.gp.data.objects.Chromosome;
 
 import java.util.*;
 
@@ -26,14 +26,14 @@ public class PopulationController {
 
     private static Map<String, Double> dataLine;
 
-    private List<Chromosomes> chromosomes;
+    private List<Chromosome> chromosomes;
     private List<Double> chromosomesFitness;
 
     public PopulationController() {
         this.chromosomes = new ArrayList<>(ConfigController.getPopulationSize());
         for (int counter =0;  counter < ConfigController.getPopulationSize(); counter++)
         {
-            chromosomes.add(counter, new Chromosomes(ConfigController.getMaxDepth(),(counter% 2 ==0)));
+            chromosomes.add(counter, new Chromosome(ConfigController.getMaxDepth(),(counter% 2 ==0)));
         }
         this.chromosomesFitness = new ArrayList<>(ConfigController.getPopulationSize());
     }
@@ -46,7 +46,7 @@ public class PopulationController {
         }
     }
 
-    public Chromosomes getChromosomes(int index){
+    public Chromosome getChromosomes(int index){
         return chromosomes.get(index);
     }
 
@@ -62,7 +62,7 @@ public class PopulationController {
         return chromosomesFitness.get(index);
     }
 
-    public double getFitnessOfChromosomes(Chromosomes chromosome){
+    public double getFitnessOfChromosomes(Chromosome chromosome){
         return chromosomesFitness.get(chromosomes.indexOf(chromosome));
     }
 
@@ -71,25 +71,25 @@ public class PopulationController {
         return chromosomes.get(chromosomesIndex).evaluate();
     }
 
-    public Chromosomes mutationChromosomes(int chromosomesIndex) {
-        Chromosomes newChromosomes = new Chromosomes(chromosomes.get(chromosomesIndex));
+    public Chromosome mutationChromosomes(int chromosomesIndex) {
+        Chromosome newChromosomes = new Chromosome(chromosomes.get(chromosomesIndex));
         int id = newChromosomes.getRandomSubTreeID();
         char type = newChromosomes.getTypeOfNode(id);
         if (id == 1){
-            newChromosomes = new Chromosomes(ConfigController.getMaxDepth(), type, false);
+            newChromosomes = new Chromosome(ConfigController.getMaxDepth(), type, false);
         }else{
-            newChromosomes.replaceSubTree(id, new Chromosomes(ConfigController.getMaxDepth(), type, false));
+            newChromosomes.replaceSubTree(id, new Chromosome(ConfigController.getMaxDepth(), type, false));
         }
         newChromosomes.renumberTheNodes(true);
         return newChromosomes;
     }
 
-    public List<Chromosomes> crossoverChromosomes(int chromosomesOnesIndex, int chromosomeTwosIndex){
-        Chromosomes newChromosomesOne = new Chromosomes(chromosomes.get(chromosomesOnesIndex));
+    public List<Chromosome> crossoverChromosomes(int chromosomesOnesIndex, int chromosomeTwosIndex){
+        Chromosome newChromosomesOne = new Chromosome(chromosomes.get(chromosomesOnesIndex));
         int subTreeIDOfChromosomesOne = newChromosomesOne.getRandomSubTreeID();
         char subTreeTypeOfChromosomesOne  = newChromosomesOne.getTypeOfNode(subTreeIDOfChromosomesOne);;
 
-        Chromosomes newChromosomesTwo = new Chromosomes(chromosomes.get(chromosomeTwosIndex));
+        Chromosome newChromosomesTwo = new Chromosome(chromosomes.get(chromosomeTwosIndex));
         int subTreeIDOfChromosomesTwo = newChromosomesTwo.getRandomSubTreeID();
         char subTreeTypeOfChromosomesTwo = newChromosomesTwo.getTypeOfNode(subTreeIDOfChromosomesTwo);
 
@@ -106,8 +106,8 @@ public class PopulationController {
             counter++;
         }
 
-        Chromosomes subTreeOne = newChromosomesOne.getSubTree(subTreeIDOfChromosomesOne);
-        Chromosomes subTreeTwo = newChromosomesTwo.getSubTree(subTreeIDOfChromosomesTwo);
+        Chromosome subTreeOne = newChromosomesOne.getSubTree(subTreeIDOfChromosomesOne);
+        Chromosome subTreeTwo = newChromosomesTwo.getSubTree(subTreeIDOfChromosomesTwo);
 
         if (subTreeIDOfChromosomesOne == 1){
             newChromosomesOne = subTreeTwo;
@@ -126,10 +126,10 @@ public class PopulationController {
         return new LinkedList<>(Arrays.asList(newChromosomesOne,newChromosomesTwo));
     }
 
-    public List<Chromosomes> reproductionChromosomes(List<Integer> chromosomesIndexes){
-        List<Chromosomes> outputs = new LinkedList<>();
+    public List<Chromosome> reproductionChromosomes(List<Integer> chromosomesIndexes){
+        List<Chromosome> outputs = new LinkedList<>();
         for (int index: chromosomesIndexes){
-            outputs.add(new Chromosomes(chromosomes.get(index)));
+            outputs.add(new Chromosome(chromosomes.get(index)));
         }
         return outputs;
     }
@@ -176,7 +176,7 @@ public class PopulationController {
 
     }
 
-    public void setChromosomes(List<Chromosomes> chromosomes) {
+    public void setChromosomes(List<Chromosome> chromosomes) {
         this.chromosomes = chromosomes;
     }
 }

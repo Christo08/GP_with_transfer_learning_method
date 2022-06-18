@@ -36,10 +36,10 @@ public class TargetTaskDataController extends DataController {
                 Map<String, Double> dataLine = new HashMap<>();
                 for (int counter =0; counter < splitLine.size(); counter++)
                 {
-                    double number = Double.parseDouble(splitLine.get(counter))-1;
+                    double number = Double.parseDouble(splitLine.get(counter));
                     if (counter == splitLine.size()-1)
                     {
-                        dataLine.put("ans", number);
+                        dataLine.put("ans", number-1);
                     }
                     else
                     {

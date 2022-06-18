@@ -19,26 +19,35 @@ public class Main {
         try {
             int mod;
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Please enter 1 to train the gp with transfer learning or 2 without transfer learning");
+            System.out.println("Please enter 1 to train the gp and export the data, 2 to train the gp with transfer learning or 3 without transfer learning");
             mod = Integer.parseInt(reader.readLine());
 
             String datasetNames = "";
-            int counter = 1;
-            List<String> keys = new ArrayList<>(ConfigController.getPathToTestingDataset().keySet());
-            keys = keys.stream()
-                       .sorted(Comparator.naturalOrder())
-                       .collect(Collectors.toList());
-            for (String datasetName:keys) {
-                datasetNames += counter+" "+datasetName+"\n";
-                counter++;
+            String datasetName = "";
+            if (mod != 1){
+                int counter = 1;
+                List<String> keys = new ArrayList<>(ConfigController.getPathToTestingDataset().keySet());
+                keys = keys.stream()
+                        .sorted(Comparator.naturalOrder())
+                        .collect(Collectors.toList());
+                for (String key:keys) {
+                    datasetNames += counter+" "+key+"\n";
+                    counter++;
+                }
+                System.out.println("Please enter a number to select a dataset:");
+                System.out.print(datasetNames);
+                datasetName = keys.get(Integer.parseInt(reader.readLine())-1);
             }
 
-            System.out.println("Please enter a number to select a dataset:");
-            System.out.print(datasetNames);
-            String datasetName = keys.get(Integer.parseInt(reader.readLine())-1);
 
             GPController gpController = new GPController(args[0], datasetName, mod);
-            gpController.experiment();
+            if (mod == 1){
+                gpController.exportData();
+            }else if (mod == 2){
+                gpController.importData();
+            }else{
+                gpController.experiment();
+            }
         } catch (FileNotFoundException e) {
             System.out.println("Can not reader the file.");
             e.printStackTrace();

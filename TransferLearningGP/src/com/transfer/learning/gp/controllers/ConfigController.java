@@ -35,7 +35,7 @@ public class ConfigController {
     }};
     private final static Map<String, String> pathToTrainingDataset = new HashMap<>(){{
         put("Avila","\\Avila\\avila_tr.txt");
-        put("DryBean","\\DryBeanDataset\\dryBeam_tr.txt");
+        put("DryBeam","\\DryBeanDataset\\dryBeam_tr.txt");
         put("Iris","\\Iris\\iris_tr.txt");
         put("Seeds","\\Seeds\\seeds_tr.txt");
         put("WineQualityRed","\\WineRed\\wineQualityRed.txt");
@@ -47,16 +47,17 @@ public class ConfigController {
         put("Iris","\\Iris\\iris_ts.txt");
         put("Seeds","\\Seeds\\seeds_ts.txt");
     }};
-    private final static int maxNumberOfGenerations = 1000;
+    private final static int maxNumberOfGenerations = 100;
     private final static double minAccuracy = 95;
     private final static int tournamentSize = 4;
     private final static int reproductionSize = 20;
-    private final static int crossoverSize = 50;
+    private final static double crossoverSize = 50;
     private final static int mutationSize = 30;
     private final static int numberOfGenerationsBeforeEvolveMap = 50;
     private final static int numberOfBatch = 4;
     private final static int numberOfRuns = 20;
-    private static int maxDepthOfCrossover = 100;
+    private static int maxDepthOfCrossover = 50;
+    private static int numberOfSameBeforeEnding =100;
 
     public static int getMaxDepth() {
         return maxDepth;
@@ -107,15 +108,15 @@ public class ConfigController {
     }
 
     public static int getReproductionSize() {
-        return reproductionSize;
+        return (int) Math.round((reproductionSize/((double)100)) * populationSize);
     }
 
     public static int getCrossoverSize() {
-        return crossoverSize;
+        return (int) Math.round((crossoverSize/((double)100)) * populationSize);
     }
 
     public static int getMutationSize() {
-        return mutationSize;
+        return  (int) Math.round((mutationSize/((double)100)) * populationSize);
     }
 
     public static int getNumberOfGenerationsBeforeEvolveMap() {
@@ -132,5 +133,9 @@ public class ConfigController {
 
     public static int getMaxDepthOfCrossover() {
         return maxDepthOfCrossover;
+    }
+
+    public static int getNumberOfSameBeforeEnding() {
+        return numberOfSameBeforeEnding;
     }
 }

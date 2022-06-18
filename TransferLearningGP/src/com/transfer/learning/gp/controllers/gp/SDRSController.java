@@ -41,6 +41,10 @@ public class SDRSController {
         }
     }
 
+    public void stop() {
+        threadExecutorService.shutdown();
+    }
+
     public void evolveMap(){
         array = new ArrayList<>();
         for (int counter = 0; counter< range.keySet().size(); counter++){
@@ -53,35 +57,44 @@ public class SDRSController {
 
         AtomicInteger totalCounter =new AtomicInteger(0);
         AtomicInteger numberOfThreadsFinished = new AtomicInteger(0);
-        for (Map<String, Double> datum : dataController.getDataSet()) {
-            for (int counter2 =0; counter2< ConfigController.getPopulationSize(); counter2++){
-                double output = populationController.evaluateChromosomes(datum, counter2);
-                int slot = (int) Math.round(output);
-                if (slot <= ConfigController.getStartBondOfSlots())
-                    slot = (int) ConfigController.getStartBondOfSlots();
-                else  if (slot >= ConfigController.getStopBondOfSlots())
-                    slot = (int) (ConfigController.getStopBondOfSlots()-1);
-                int slotIndex =ConfigController.getNumberOfSlots()/2 + slot;
-                int classIndex = (int) Math.round(datum.get("ans"));
-                double value = array.get(slotIndex).get(classIndex) + gpController.fitnessOfChromosomes(counter2);
-                array.get(slotIndex).set(classIndex,value );
-                totalCounter.getAndIncrement();
-                printProgress(totalCounter.get(), (dataController.getDataSet().size() * ConfigController.getPopulationSize()));
-            }
+        for (int counter1 = 0; counter1 < ConfigController.getNumberOfBatch(); counter1++){
+            int finalCounter = counter1;
+            threadExecutorService.submit(() -> {
+                for (Map<String, Double> datum : dataController.getBatchOfData(finalCounter)) {
+                    for (int counter2 =0; counter2< ConfigController.getPopulationSize(); counter2++){
+                        double output = populationController.evaluateChromosomes(datum, counter2);
+                        int slot = (int) Math.round(output);
+                        if (slot <= ConfigController.getStartBondOfSlots())
+                            slot = (int) ConfigController.getStartBondOfSlots();
+                        else  if (slot >= ConfigController.getStopBondOfSlots())
+                            slot = (int) (ConfigController.getStopBondOfSlots()-1);
+                        int slotIndex =ConfigController.getNumberOfSlots()/2 + slot;
+                        int classIndex = (int) Math.round(datum.get("ans"));
+                        double value = array.get(slotIndex).get(classIndex) + gpController.fitnessOfChromosomes(counter2);
+                        array.get(slotIndex).set(classIndex,value );
+                        totalCounter.getAndIncrement();
+                        printProgress(totalCounter.get(), (dataController.getDataSet().size() * ConfigController.getPopulationSize()));
+                    }
+                }
+                numberOfThreadsFinished.getAndIncrement();
+            });
         }
-
+        while (numberOfThreadsFinished.get() <ConfigController.getNumberOfBatch()){
+        }
+        System.out.println();
 
         for (Double dKey : keys) {
-            double maxValue = array.get(keys.indexOf(dKey)).stream().max(Comparator.naturalOrder()).orElse(0D);
-            int indexOfMaxValue = array.get(keys.indexOf(dKey)).indexOf(maxValue);
+            int indexOfKey =keys.indexOf(dKey);
+            double maxValue = array.get(indexOfKey).stream().max(Comparator.naturalOrder()).orElse(0D);
+            int indexOfMaxValue = array.get(indexOfKey).indexOf(maxValue);
             if (maxValue > 0)
                 range.replace(dKey, String.valueOf(indexOfMaxValue));
             else
                 range.replace(dKey, "-1");
         }
 
-        double prevKey = 0;
-        double nextKey = 0;
+        double prevKey;
+        double nextKey;
         int counter =0;
         String newClass ="-1";
         for (Double dKey : keys) {
@@ -101,7 +114,6 @@ public class SDRSController {
             range.replace(dKey, newClass);
         }
 
-        System.out.println(1);
     }
     
     public String getClass(double input){

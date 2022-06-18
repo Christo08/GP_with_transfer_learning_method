@@ -4,7 +4,7 @@ import com.transfer.learning.gp.controllers.ConfigController;
 import com.transfer.learning.gp.controllers.data.DataController;
 import com.transfer.learning.gp.controllers.data.SourceTaskDataController;
 import com.transfer.learning.gp.controllers.data.TargetTaskDataController;
-import com.transfer.learning.gp.data.objects.Chromosomes;
+import com.transfer.learning.gp.data.objects.Chromosome;
 import com.transfer.learning.gp.data.objects.xml.Experiment;
 import com.transfer.learning.gp.data.objects.xml.Run;
 
@@ -17,6 +17,7 @@ import java.util.*;
 
 public class GPController {
     private static Random random = new Random();
+    private int mod;
 
     private DataController dataController;
     private PopulationController populationController;
@@ -26,36 +27,75 @@ public class GPController {
     private double oldBestChromosomesAccuracy;
     private Experiment experiment;
     private String pathToExperiment;
+    private long startTime;
 
     public GPController(String pathToData, String dataSetName, int mod) throws FileNotFoundException {
-        seed = random.nextLong();
         this.dataSetName = dataSetName;
-        pathToExperiment = pathToData;
+        this.pathToExperiment = pathToData;
+        this.mod = mod;
+        this.startTime = System.currentTimeMillis();
+        seed = random.nextLong();
+
         random.setSeed(seed);
         System.out.println("Seed: "+ seed);
 
         if (mod == 1)
-            this.dataController = new SourceTaskDataController(pathToExperiment);
+            this.dataController = new SourceTaskDataController(pathToExperiment+"\\Cleaned");
         else
-            this.dataController = new TargetTaskDataController(pathToExperiment,dataSetName);
+            this.dataController = new TargetTaskDataController(pathToExperiment+"\\Cleaned",dataSetName);
 
         this.populationController = new PopulationController();
         this.sdrsController = new SDRSController(this, dataController, populationController);
     }
 
-    private Chromosomes evolveAnswers(int runNumber){
+    public static Random getRandom() {
+        return random;
+    }
+
+    public double fitnessOfChromosomes(int counter) {
+        double numberOfCorrect =0;
+        for (Map<String, Double> dataLine: dataController.getDataSet()) {
+            String chromosomesOutput = sdrsController.getClass(populationController.evaluateChromosomes(dataLine,counter));
+            if (chromosomesOutput.equals(dataLine.get("ans").toString()))
+                numberOfCorrect++;
+        }
+        return numberOfCorrect/((double)dataController.getDataSet().size()) * 100;
+    }
+
+    public void experiment() throws JAXBException {
+        experiment = new Experiment(dataSetName, seed);
+        for (int counter =0; counter < ConfigController.getNumberOfRuns(); counter++){
+            evolveAnswers((counter+1));
+            convertObjectToXML(experiment);
+        }
+        System.out.println("Finished");
+        sdrsController.stop();
+    }
+
+    public List<Chromosome> getTopPercentageOfPopulation() {
+        return new ArrayList<>();
+    }
+
+    public String getPathToExperiment() {
+        return pathToExperiment;
+    }
+
+    private Chromosome evolveAnswers(int runNumber){
         Run run = new Run();
         run.setRunNumber(runNumber);
         run.setStartTimeStamp(System.currentTimeMillis());
-        Chromosomes bestChromosomes = populationController.getChromosomes(findBestChromosomes());
+        seed = random.nextLong();
+        random.setSeed(seed);
+        run.setSeed(seed);
+        Chromosome bestChromosomes = populationController.getChromosomes(findBestChromosomes());
         double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(bestChromosomes);
         int indexOfBestChromosomes =0;
         int counterChange =0;
-        System.out.println("Run "+runNumber);
+        System.out.println("Run "+runNumber+" seed: "+seed);
         try {
             int counter = 0;
             while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
-                List<Chromosomes> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
+                List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getReproductionSize())));
 
                 List<Integer> mutationIndexes = selectParents(ConfigController.getMutationSize());
@@ -64,7 +104,7 @@ public class GPController {
                 }
 
                 List<Integer> crossoverIndexes = selectParents(ConfigController.getCrossoverSize());
-                for (int counter1 = 0; counter1 < ConfigController.getCrossoverSize() - 1; counter1+=2){
+                for (int counter1 = 0; counter1 < ConfigController.getCrossoverSize(); counter1+=2){
                     newChromosomes.addAll(populationController.crossoverChromosomes(crossoverIndexes.get(counter1),crossoverIndexes.get(counter1+1)));
                 }
 
@@ -79,18 +119,18 @@ public class GPController {
                 bestChromosomes = populationController.getChromosomes(indexOfBestChromosomes);
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(bestChromosomes);
 
-                if (bestChromosomesAccuracy != oldBestChromosomesAccuracy)
-                    counterChange =0;
-                else
+                if ((bestChromosomesAccuracy + 0.05 >= oldBestChromosomesAccuracy ) &&
+                    (bestChromosomesAccuracy - 0.05 <= oldBestChromosomesAccuracy ))
                     counterChange++;
-                if (counterChange>= 100) {
+                else
+                    counterChange =0;
+                if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     run.setRunSuccessful(false);
                     break;
                 }
                 System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
                 run.setNumberOfGenerations(counter+1);
                 counter = counter+1;
-                // System.out.println(bestChromosomes);
             }
             run.setStopTimeStamp(System.currentTimeMillis());
             run.setAccuracyOnTrainingDataset(bestChromosomesAccuracy);
@@ -114,7 +154,7 @@ public class GPController {
 
     private int findBestChromosomes() {
         double maxFitness =0;
-        double fitness =0;
+        double fitness;
         int chromosomesIndex=0;
         for (int counter = 0; counter < ConfigController.getPopulationSize(); counter++){
             fitness = fitnessOfChromosomes(counter);
@@ -151,20 +191,6 @@ public class GPController {
         return bestIndex;
     }
 
-    public static Random getRandom() {
-        return random;
-    }
-
-    public double fitnessOfChromosomes(int counter) {
-        double numberOfCorrect =0;
-        for (Map<String, Double> dataLine: dataController.getDataSet()) {
-            String chromosomesOutput = sdrsController.getClass(populationController.evaluateChromosomes(dataLine,counter));
-            if (chromosomesOutput.equals(dataLine.get("ans").toString()))
-                numberOfCorrect++;
-        }
-        return numberOfCorrect/((double)dataController.getDataSet().size()) * 100;
-    }
-
     private double getAccuracyOnTestingDataset(int counter){
         double numberOfCorrect =0;
         dataController.chanceMod();
@@ -178,14 +204,6 @@ public class GPController {
 
     }
 
-    public void experiment() throws JAXBException {
-        experiment = new Experiment(dataSetName, seed);
-        for (int counter =0; counter < ConfigController.getNumberOfRuns(); counter++){
-            evolveAnswers((counter+1));
-            convertObjectToXML(experiment);
-        }
-    }
-
     private void convertObjectToXML(Experiment experiment) throws JAXBException {
         // create JAXB context and instantiate marshaller
         JAXBContext context = JAXBContext.newInstance(Experiment.class);
@@ -193,6 +211,6 @@ public class GPController {
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
 
         // Write to File
-        marshaller.marshal(experiment, new File(pathToExperiment.substring(0,pathToExperiment.lastIndexOf("\\"))+"\\Experiment\\"+experiment.getDataSetName()+"Experiment.xml"));
+        marshaller.marshal(experiment, new File(pathToExperiment+"\\Experiment\\"+dataSetName+"\\"+startTime+"-Experiment.xml"));
     }
 }

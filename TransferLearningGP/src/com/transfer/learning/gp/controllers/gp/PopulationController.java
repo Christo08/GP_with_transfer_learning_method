@@ -5,6 +5,7 @@ import com.transfer.learning.gp.controllers.ConfigController;
 import com.transfer.learning.gp.data.objects.Chromosome;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class PopulationController {
     //Function set
@@ -26,16 +27,28 @@ public class PopulationController {
 
     private static Map<String, Double> dataLine;
 
-    private List<Chromosome> chromosomes;
-    private List<Double> chromosomesFitness;
+    private Map<Integer, Chromosome> chromosomes;
+    private Map<Integer, Double> chromosomesFitness;
 
     public PopulationController() {
-        this.chromosomes = new ArrayList<>(ConfigController.getPopulationSize());
+        this.chromosomes = new HashMap<>();
         for (int counter =0;  counter < ConfigController.getPopulationSize(); counter++)
         {
-            chromosomes.add(counter, new Chromosome(ConfigController.getMaxDepth(),(counter% 2 ==0)));
+            Chromosome newChromosome;
+            do {
+                newChromosome = new Chromosome(ConfigController.getMaxDepth(),(counter% 2 ==0));
+            }while (containsChromosome(newChromosome));
+            chromosomes.put(counter, newChromosome);
         }
-        this.chromosomesFitness = new ArrayList<>(ConfigController.getPopulationSize());
+        this.chromosomesFitness = new HashMap<>();
+    }
+
+    private boolean containsChromosome(Chromosome newChromosome) {
+        for (Chromosome value : chromosomes.values()) {
+            if (value.hashCode() == newChromosome.hashCode())
+                return true;
+        }
+        return false;
     }
 
     public static double getValueOf(String symbol) {
@@ -52,18 +65,14 @@ public class PopulationController {
 
     public void addFitnessOfChromosomes(int index, double fitness){
         if (chromosomesFitness.size() < ConfigController.getPopulationSize()){
-            chromosomesFitness.add(index,fitness);
+            chromosomesFitness.put(index,fitness);
         }else{
-            chromosomesFitness.set(index,fitness);
+            chromosomesFitness.replace(index,fitness);
         }
     }
 
     public double getFitnessOfChromosomes(int index){
         return chromosomesFitness.get(index);
-    }
-
-    public double getFitnessOfChromosomes(Chromosome chromosome){
-        return chromosomesFitness.get(chromosomes.indexOf(chromosome));
     }
 
     public double evaluateChromosomes(Map<String, Double> dataLine, int chromosomesIndex) {
@@ -177,6 +186,34 @@ public class PopulationController {
     }
 
     public void setChromosomes(List<Chromosome> chromosomes) {
-        this.chromosomes = chromosomes;
+        this.chromosomes = new HashMap<>();
+        for (int counter =0;  counter < chromosomes.size(); counter++)
+        {
+            this.chromosomes.put(counter, chromosomes.get(counter));
+        }
+    }
+
+    public void sortedPopulation() {
+        Map<Integer, Double> resultFitness = new LinkedHashMap<>();
+        Map<Integer, Chromosome> resultChromosomes = new LinkedHashMap<>();
+        List<Map.Entry<Integer, Double>> entries =chromosomesFitness.entrySet().stream()
+                                                                               .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
+                                                                               .collect(Collectors.toList());
+        for (int counter=0; counter< entries.size();counter++){
+            Map.Entry<Integer, Double> entry =entries.get(counter);
+            resultFitness.put(counter, entry.getValue());
+            resultChromosomes.put(counter, chromosomes.get(entry.getKey()));
+        }
+
+        chromosomes = resultChromosomes;
+        chromosomesFitness = resultFitness;
+    }
+
+    public List<Chromosome> getTopChromosomes(int numberOfChromosomes) {
+        List<Chromosome> output = new LinkedList<>();
+        for (int counter =0; counter < numberOfChromosomes; counter++){
+            output.add(chromosomes.get(counter));
+        }
+        return output;
     }
 }

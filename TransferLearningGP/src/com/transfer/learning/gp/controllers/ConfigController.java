@@ -50,14 +50,16 @@ public class ConfigController {
     private final static int maxNumberOfGenerations = 100;
     private final static double minAccuracy = 95;
     private final static int tournamentSize = 4;
-    private final static int reproductionSize = 20;
-    private final static double crossoverSize = 50;
-    private final static int mutationSize = 30;
+    private final static double percentOfReproduction = 0.2;
+    private final static double percentOfCrossover = 0.5;
+    private final static double percentOfMutation = 0.3;
     private final static int numberOfGenerationsBeforeEvolveMap = 50;
     private final static int numberOfBatch = 4;
     private final static int numberOfRuns = 20;
-    private static int maxDepthOfCrossover = 50;
-    private static int numberOfSameBeforeEnding =100;
+    private final static int maxDepthOfCrossover = 50;
+    private final static int numberOfSameBeforeEnding = 100;
+    private final static double padding = 0.05;
+    private final static double percentOfChromosomeToSaveInFullTreMethod = 0.5;
 
     public static int getMaxDepth() {
         return maxDepth;
@@ -107,16 +109,16 @@ public class ConfigController {
         return tournamentSize;
     }
 
-    public static int getReproductionSize() {
-        return (int) Math.round((reproductionSize/((double)100)) * populationSize);
+    public static int getPercentOfReproduction() {
+        return (int) Math.round(percentOfReproduction * populationSize);
     }
 
-    public static int getCrossoverSize() {
-        return (int) Math.round((crossoverSize/((double)100)) * populationSize);
+    public static int getPercentOfCrossover() {
+        return (int) Math.round(percentOfCrossover * populationSize);
     }
 
-    public static int getMutationSize() {
-        return  (int) Math.round((mutationSize/((double)100)) * populationSize);
+    public static int getPercentOfMutation() {
+        return  (int) Math.round(percentOfMutation * populationSize);
     }
 
     public static int getNumberOfGenerationsBeforeEvolveMap() {
@@ -137,5 +139,13 @@ public class ConfigController {
 
     public static int getNumberOfSameBeforeEnding() {
         return numberOfSameBeforeEnding;
+    }
+
+    public static double getPadding() {
+        return padding;
+    }
+
+    public static int getPercentOfChromosomeToSaveInFullTreMethod() {
+        return  (int) Math.round(percentOfChromosomeToSaveInFullTreMethod * populationSize);
     }
 }

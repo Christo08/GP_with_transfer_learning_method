@@ -23,7 +23,7 @@ public class Main {
             mod = Integer.parseInt(reader.readLine());
 
             String datasetNames = "";
-            String datasetName = "";
+            String datasetName = "WineQualityWhite";
             if (mod != 1){
                 int counter = 1;
                 List<String> keys = new ArrayList<>(ConfigController.getPathToTestingDataset().keySet());

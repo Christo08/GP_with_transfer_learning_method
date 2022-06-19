@@ -11,12 +11,13 @@ import com.transfer.learning.gp.data.objects.xml.Run;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GPController {
     private static Random random = new Random();
+    private TransferLearningController transferLearningController;
     private int mod;
 
     private DataController dataController;
@@ -28,12 +29,14 @@ public class GPController {
     private Experiment experiment;
     private String pathToExperiment;
     private long startTime;
+    private int transferLearningMod;
 
     public GPController(String pathToData, String dataSetName, int mod) throws FileNotFoundException {
         this.dataSetName = dataSetName;
         this.pathToExperiment = pathToData;
         this.mod = mod;
         this.startTime = System.currentTimeMillis();
+        this.transferLearningMod = -1;
         seed = random.nextLong();
 
         random.setSeed(seed);
@@ -46,6 +49,7 @@ public class GPController {
 
         this.populationController = new PopulationController();
         this.sdrsController = new SDRSController(this, dataController, populationController);
+        this.transferLearningController = new TransferLearningController(this);
     }
 
     public static Random getRandom() {
@@ -64,6 +68,7 @@ public class GPController {
 
     public void experiment() throws JAXBException {
         experiment = new Experiment(dataSetName, seed);
+        experiment.setTransferLearningMethod(transferLearningMod);
         for (int counter =0; counter < ConfigController.getNumberOfRuns(); counter++){
             evolveAnswers((counter+1));
             convertObjectToXML(experiment);
@@ -73,7 +78,38 @@ public class GPController {
     }
 
     public List<Chromosome> getTopPercentageOfPopulation() {
-        return new ArrayList<>();
+
+        return populationController.getTopChromosomes(ConfigController.getPercentOfChromosomeToSaveInFullTreMethod());
+    }
+
+    public void exportData() throws IOException, JAXBException {
+        System.out.println("Please set a transfer learning method, by entering the number:");
+        System.out.println("1 Full tree");
+        System.out.println("2 Sub-tree");
+        System.out.println("3 Best gen");
+        System.out.println("4 GPCR");
+        System.out.println("5 PST");
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        transferLearningMod = Integer.parseInt(reader.readLine());
+
+        dataController.chanceMod();
+
+        experiment = new Experiment(dataSetName, seed);
+        experiment.setTransferLearningMethod(transferLearningMod);
+
+        evolveAnswers(1);
+        convertObjectToXML(experiment);
+
+        if (transferLearningMod == 1){
+            transferLearningController.exportFullTree();
+        } else if (transferLearningMod == 2){
+            transferLearningController.exportSubTree();
+        }
+    }
+
+    public void importData() {
+
     }
 
     public String getPathToExperiment() {
@@ -87,24 +123,24 @@ public class GPController {
         seed = random.nextLong();
         random.setSeed(seed);
         run.setSeed(seed);
-        Chromosome bestChromosomes = populationController.getChromosomes(findBestChromosomes());
-        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(bestChromosomes);
-        int indexOfBestChromosomes =0;
+        int indexOfBestChromosomes =findBestChromosomes();
+        Chromosome bestChromosomes = populationController.getChromosomes(indexOfBestChromosomes);
+        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
         int counterChange =0;
         System.out.println("Run "+runNumber+" seed: "+seed);
         try {
             int counter = 0;
             while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
-                newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getReproductionSize())));
+                newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproduction())));
 
-                List<Integer> mutationIndexes = selectParents(ConfigController.getMutationSize());
+                List<Integer> mutationIndexes = selectParents(ConfigController.getPercentOfMutation());
                 for (int index: mutationIndexes){
                     newChromosomes.add(populationController.mutationChromosomes(index));
                 }
 
-                List<Integer> crossoverIndexes = selectParents(ConfigController.getCrossoverSize());
-                for (int counter1 = 0; counter1 < ConfigController.getCrossoverSize(); counter1+=2){
+                List<Integer> crossoverIndexes = selectParents(ConfigController.getPercentOfCrossover());
+                for (int counter1 = 0; counter1 < ConfigController.getPercentOfCrossover(); counter1+=2){
                     newChromosomes.addAll(populationController.crossoverChromosomes(crossoverIndexes.get(counter1),crossoverIndexes.get(counter1+1)));
                 }
 
@@ -117,10 +153,10 @@ public class GPController {
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
                 indexOfBestChromosomes =findBestChromosomes();
                 bestChromosomes = populationController.getChromosomes(indexOfBestChromosomes);
-                bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(bestChromosomes);
+                bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
-                if ((bestChromosomesAccuracy + 0.05 >= oldBestChromosomesAccuracy ) &&
-                    (bestChromosomesAccuracy - 0.05 <= oldBestChromosomesAccuracy ))
+                if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
+                    (bestChromosomesAccuracy - ConfigController.getPadding() <= oldBestChromosomesAccuracy ))
                     counterChange++;
                 else
                     counterChange =0;
@@ -134,7 +170,8 @@ public class GPController {
             }
             run.setStopTimeStamp(System.currentTimeMillis());
             run.setAccuracyOnTrainingDataset(bestChromosomesAccuracy);
-            run.setAccuracyOnTestingDataset(getAccuracyOnTestingDataset(indexOfBestChromosomes));
+            if (transferLearningMod == -1)
+                run.setAccuracyOnTestingDataset(getAccuracyOnTestingDataset(indexOfBestChromosomes));
             run.setRunSuccessful(true);
         }catch (Exception exception){
             run.setRunSuccessful(false);
@@ -166,6 +203,7 @@ public class GPController {
                 chromosomesIndex = counter;
             }
         }
+        populationController.sortedPopulation();
         return chromosomesIndex;
     }
 
@@ -178,16 +216,10 @@ public class GPController {
             }while (parentsIndex.contains(randomIndex));
             parentsIndex.add(randomIndex);
         }
-        int bestIndex =0;
-        double bestFitness =0;
-        double fitness =0;
-        for (int index: parentsIndex){
-            fitness = populationController.getFitnessOfChromosomes(index);
-            if (fitness > bestFitness){
-                bestFitness = fitness;
-                bestIndex = index;
-            }
-        }
+        int bestIndex = parentsIndex.stream()
+                                    .sorted()
+                                    .collect(Collectors.toList())
+                                    .get(0);
         return bestIndex;
     }
 

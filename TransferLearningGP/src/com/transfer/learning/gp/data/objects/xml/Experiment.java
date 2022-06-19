@@ -23,8 +23,11 @@ public class Experiment {
     private double startBondOfSlots;
     private double stopBondOfSlots;
     private int tournamentSize;
+    private int transferLearningMethod;
     private int reproductionSize;
     private List<Run> runs;
+    private double padding;
+    private double percentOfChromosomeToSaveInFullTreMethod;
 
     public Experiment() {
     }
@@ -33,18 +36,20 @@ public class Experiment {
         this.dataSetName = dataSetName;
         this.seed = seed;
 
-        crossoverSize = ConfigController.getCrossoverSize();
+        crossoverSize = ConfigController.getPercentOfCrossover();
         maxDepthOfStartingChromosomes = ConfigController.getMaxDepth();
         minAccuracy = ConfigController.getMinAccuracy();
-        mutationSize = ConfigController.getMutationSize();
+        mutationSize = ConfigController.getPercentOfMutation();
         numberOfGenerationsBeforeEvolveMap = ConfigController.getNumberOfGenerationsBeforeEvolveMap();
         numberOfSlots = ConfigController.getNumberOfSlots();
         populationSize = ConfigController.getPopulationSize();
         startBondOfSlots = ConfigController.getStartBondOfSlots();
         stopBondOfSlots = ConfigController.getStopBondOfSlots();
         tournamentSize = ConfigController.getTournamentSize();
-        reproductionSize = ConfigController.getReproductionSize();
+        reproductionSize = ConfigController.getPercentOfReproduction();
         numberOfRuns = ConfigController.getNumberOfRuns();
+        padding = ConfigController.getPadding();
+        percentOfChromosomeToSaveInFullTreMethod = ConfigController.getPercentOfChromosomeToSaveInFullTreMethod();
 
         runs = new LinkedList<>();
     }
@@ -185,5 +190,29 @@ public class Experiment {
 
     public void addRun(Run run) {
         this.runs.add(run);
+    }
+
+    public void setTransferLearningMethod(int transferLearningMethod) {
+        this.transferLearningMethod = transferLearningMethod;
+    }
+
+    public int getTransferLearningMethod() {
+        return transferLearningMethod;
+    }
+
+    public double getPadding() {
+        return padding;
+    }
+
+    public void setPadding(double padding) {
+        this.padding = padding;
+    }
+
+    public double getPercentOfChromosomeToSaveInFullTreMethod() {
+        return percentOfChromosomeToSaveInFullTreMethod;
+    }
+
+    public void setPercentOfChromosomeToSaveInFullTreMethod(double percentOfChromosomeToSaveInFullTreMethod) {
+        this.percentOfChromosomeToSaveInFullTreMethod = percentOfChromosomeToSaveInFullTreMethod;
     }
 }

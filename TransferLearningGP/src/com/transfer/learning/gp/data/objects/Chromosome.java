@@ -228,4 +228,12 @@ public class Chromosome {
         }
         return "{"+symbol+stringOfChildren+"}";
     }
+
+    @Override
+    public int hashCode() {
+        int result = children.hashCode();
+        result = 31 * result + (symbol != null ? symbol.hashCode() : 0);
+        result = 31 * result + nodeID;
+        return result;
+    }
 }

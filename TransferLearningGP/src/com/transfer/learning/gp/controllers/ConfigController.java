@@ -47,7 +47,6 @@ public class ConfigController {
         put("Iris","\\Iris\\iris_ts.txt");
         put("Seeds","\\Seeds\\seeds_ts.txt");
     }};
-    private final static int maxNumberOfGenerations = 100;
     private final static double minAccuracy = 95;
     private final static int tournamentSize = 4;
     private final static double percentOfReproduction = 0.2;
@@ -57,9 +56,11 @@ public class ConfigController {
     private final static int numberOfBatch = 4;
     private final static int numberOfRuns = 20;
     private final static int maxDepthOfCrossover = 50;
-    private final static int numberOfSameBeforeEnding = 100;
+    private final static int numberOfSameBeforeEnding = 50;
     private final static double padding = 0.05;
-    private final static double percentOfChromosomeToSaveInFullTreMethod = 0.5;
+    private final static double percentOfChromosomeToSaveInFullTreeMethod = 0.5;
+    private final static double percentOfChromosomeToSaveInSubTreeMethod = 0.5;
+    private final static double percentOfChromosomeToSaveInGenMethod = 0.5;
 
     public static int getMaxDepth() {
         return maxDepth;
@@ -95,10 +96,6 @@ public class ConfigController {
 
     public static Map<String, String> getPathToTestingDataset() {
         return pathToTestingDataset;
-    }
-
-    public static int getMaxNumberOfGenerations() {
-        return maxNumberOfGenerations;
     }
 
     public static double getMinAccuracy() {
@@ -145,7 +142,15 @@ public class ConfigController {
         return padding;
     }
 
-    public static int getPercentOfChromosomeToSaveInFullTreMethod() {
-        return  (int) Math.round(percentOfChromosomeToSaveInFullTreMethod * populationSize);
+    public static int getPercentOfChromosomeToSaveInFullTreeMethod() {
+        return  (int) Math.round(percentOfChromosomeToSaveInFullTreeMethod * populationSize);
+    }
+
+    public static int getPercentOfChromosomeToSaveInSubTreeMethod() {
+        return  (int) Math.round(percentOfChromosomeToSaveInSubTreeMethod * populationSize);
+    }
+
+    public static int getPercentOfChromosomeToSaveInBestGenMethod() {
+        return  (int) Math.round(percentOfChromosomeToSaveInGenMethod * populationSize);
     }
 }

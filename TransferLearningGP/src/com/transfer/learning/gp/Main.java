@@ -18,36 +18,38 @@ public class Main {
     public static void main(String[] args) {
         try {
             int mod;
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Please enter 1 to train the gp and export the data, 2 to train the gp with transfer learning or 3 without transfer learning");
-            mod = Integer.parseInt(reader.readLine());
+            do {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                System.out.println("Please enter 1 to train the gp and export the data, 2 to train the gp with transfer learning, 3 without transfer learning or 0 to exit");
+                mod = Integer.parseInt(reader.readLine());
 
-            String datasetNames = "";
-            String datasetName = "WineQualityWhite";
-            if (mod != 1){
-                int counter = 1;
-                List<String> keys = new ArrayList<>(ConfigController.getPathToTestingDataset().keySet());
-                keys = keys.stream()
-                        .sorted(Comparator.naturalOrder())
-                        .collect(Collectors.toList());
-                for (String key:keys) {
-                    datasetNames += counter+" "+key+"\n";
-                    counter++;
+                String datasetNames = "";
+                String datasetName = "WineQualityWhite";
+                if (mod != 1){
+                    int counter = 1;
+                    List<String> keys = new ArrayList<>(ConfigController.getPathToTestingDataset().keySet());
+                    keys = keys.stream()
+                            .sorted(Comparator.naturalOrder())
+                            .collect(Collectors.toList());
+                    for (String key:keys) {
+                        datasetNames += counter+" "+key+"\n";
+                        counter++;
+                    }
+                    System.out.println("Please enter a number to select a dataset:");
+                    System.out.print(datasetNames);
+                    datasetName = keys.get(Integer.parseInt(reader.readLine())-1);
                 }
-                System.out.println("Please enter a number to select a dataset:");
-                System.out.print(datasetNames);
-                datasetName = keys.get(Integer.parseInt(reader.readLine())-1);
-            }
 
 
-            GPController gpController = new GPController(args[0], datasetName, mod);
-            if (mod == 1){
-                gpController.exportData();
-            }else if (mod == 2){
-                gpController.importData();
-            }else{
-                gpController.experiment();
-            }
+                GPController gpController = new GPController(args[0], datasetName, mod);
+                if (mod == 1){
+                    gpController.exportData();
+                }else if (mod == 2){
+                    gpController.importData();
+                }else{
+                    gpController.experiment();
+                }
+            }while (mod ==0);
         } catch (FileNotFoundException e) {
             System.out.println("Can not reader the file.");
             e.printStackTrace();

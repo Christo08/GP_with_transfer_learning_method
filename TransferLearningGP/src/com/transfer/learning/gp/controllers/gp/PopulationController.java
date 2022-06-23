@@ -3,6 +3,7 @@ package com.transfer.learning.gp.controllers.gp;
 
 import com.transfer.learning.gp.controllers.ConfigController;
 import com.transfer.learning.gp.data.objects.Chromosome;
+import com.transfer.learning.gp.data.objects.ChromosomeWrapper;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,25 +28,24 @@ public class PopulationController {
 
     private static Map<String, Double> dataLine;
 
-    private Map<Integer, Chromosome> chromosomes;
-    private Map<Integer, Double> chromosomesFitness;
+    private List<ChromosomeWrapper> chromosomes;
 
     public PopulationController() {
-        this.chromosomes = new HashMap<>();
+        this.chromosomes = new ArrayList<>();
         for (int counter =0;  counter < ConfigController.getPopulationSize(); counter++)
         {
             Chromosome newChromosome;
             do {
                 newChromosome = new Chromosome(ConfigController.getMaxDepth(),(counter% 2 ==0));
             }while (containsChromosome(newChromosome));
-            chromosomes.put(counter, newChromosome);
+            ChromosomeWrapper newChromosomeWrapper = new ChromosomeWrapper(newChromosome);
+            chromosomes.add(newChromosomeWrapper);
         }
-        this.chromosomesFitness = new HashMap<>();
     }
 
     private boolean containsChromosome(Chromosome newChromosome) {
-        for (Chromosome value : chromosomes.values()) {
-            if (value.hashCode() == newChromosome.hashCode())
+        for (ChromosomeWrapper chromosomeWrapper : chromosomes) {
+            if (chromosomeWrapper.chromosome.hashCode() == newChromosome.hashCode())
                 return true;
         }
         return false;
@@ -60,28 +60,24 @@ public class PopulationController {
     }
 
     public Chromosome getChromosomes(int index){
-        return chromosomes.get(index);
+        return chromosomes.get(index).chromosome;
     }
 
     public void addFitnessOfChromosomes(int index, double fitness){
-        if (chromosomesFitness.size() < ConfigController.getPopulationSize()){
-            chromosomesFitness.put(index,fitness);
-        }else{
-            chromosomesFitness.replace(index,fitness);
-        }
+        chromosomes.get(index).fitness = fitness;
     }
 
     public double getFitnessOfChromosomes(int index){
-        return chromosomesFitness.get(index);
+        return chromosomes.get(index).fitness;
     }
 
     public double evaluateChromosomes(Map<String, Double> dataLine, int chromosomesIndex) {
         this.dataLine = dataLine;
-        return chromosomes.get(chromosomesIndex).evaluate();
+        return chromosomes.get(chromosomesIndex).chromosome.evaluate();
     }
 
     public Chromosome mutationChromosomes(int chromosomesIndex) {
-        Chromosome newChromosomes = new Chromosome(chromosomes.get(chromosomesIndex));
+        Chromosome newChromosomes = new Chromosome(chromosomes.get(chromosomesIndex).chromosome);
         int id = newChromosomes.getRandomSubTreeID();
         char type = newChromosomes.getTypeOfNode(id);
         if (id == 1){
@@ -94,11 +90,11 @@ public class PopulationController {
     }
 
     public List<Chromosome> crossoverChromosomes(int chromosomesOnesIndex, int chromosomeTwosIndex){
-        Chromosome newChromosomesOne = new Chromosome(chromosomes.get(chromosomesOnesIndex));
+        Chromosome newChromosomesOne = new Chromosome(chromosomes.get(chromosomesOnesIndex).chromosome);
         int subTreeIDOfChromosomesOne = newChromosomesOne.getRandomSubTreeID();
         char subTreeTypeOfChromosomesOne  = newChromosomesOne.getTypeOfNode(subTreeIDOfChromosomesOne);;
 
-        Chromosome newChromosomesTwo = new Chromosome(chromosomes.get(chromosomeTwosIndex));
+        Chromosome newChromosomesTwo = new Chromosome(chromosomes.get(chromosomeTwosIndex).chromosome);
         int subTreeIDOfChromosomesTwo = newChromosomesTwo.getRandomSubTreeID();
         char subTreeTypeOfChromosomesTwo = newChromosomesTwo.getTypeOfNode(subTreeIDOfChromosomesTwo);
 
@@ -138,7 +134,7 @@ public class PopulationController {
     public List<Chromosome> reproductionChromosomes(List<Integer> chromosomesIndexes){
         List<Chromosome> outputs = new LinkedList<>();
         for (int index: chromosomesIndexes){
-            outputs.add(new Chromosome(chromosomes.get(index)));
+            outputs.add(new Chromosome(chromosomes.get(index).chromosome));
         }
         return outputs;
     }
@@ -185,32 +181,22 @@ public class PopulationController {
 
     }
 
-    public void setChromosomes(List<Chromosome> chromosomes) {
-        this.chromosomes = new HashMap<>();
-        for (int counter =0;  counter < chromosomes.size(); counter++)
+    public void setChromosomes(List<Chromosome> newChromosomes) {
+        this.chromosomes = new ArrayList<>();
+        for (int counter =0;  counter < newChromosomes.size(); counter++)
         {
-            this.chromosomes.put(counter, chromosomes.get(counter));
+            this.chromosomes.add(new ChromosomeWrapper(newChromosomes.get(counter)));
         }
     }
 
     public void sortedPopulation() {
-        Map<Integer, Double> resultFitness = new LinkedHashMap<>();
-        Map<Integer, Chromosome> resultChromosomes = new LinkedHashMap<>();
-        List<Map.Entry<Integer, Double>> entries =chromosomesFitness.entrySet().stream()
-                                                                               .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
-                                                                               .collect(Collectors.toList());
-        for (int counter=0; counter< entries.size();counter++){
-            Map.Entry<Integer, Double> entry =entries.get(counter);
-            resultFitness.put(counter, entry.getValue());
-            resultChromosomes.put(counter, chromosomes.get(entry.getKey()));
-        }
-
-        chromosomes = resultChromosomes;
-        chromosomesFitness = resultFitness;
+        chromosomes = chromosomes.stream()
+                                 .sorted((chromosomeWrapper1, chromosomeWrapper2) -> Double.compare(chromosomeWrapper2.fitness, chromosomeWrapper1.fitness))
+                                 .collect(Collectors.toList());
     }
 
-    public List<Chromosome> getTopChromosomes(int numberOfChromosomes) {
-        List<Chromosome> output = new LinkedList<>();
+    public List<ChromosomeWrapper> getTopChromosomes(int numberOfChromosomes) {
+        List<ChromosomeWrapper> output = new LinkedList<>();
         for (int counter =0; counter < numberOfChromosomes; counter++){
             output.add(chromosomes.get(counter));
         }

@@ -5,6 +5,7 @@ import com.transfer.learning.gp.controllers.data.DataController;
 import com.transfer.learning.gp.controllers.data.SourceTaskDataController;
 import com.transfer.learning.gp.controllers.data.TargetTaskDataController;
 import com.transfer.learning.gp.data.objects.Chromosome;
+import com.transfer.learning.gp.data.objects.ChromosomeWrapper;
 import com.transfer.learning.gp.data.objects.xml.Experiment;
 import com.transfer.learning.gp.data.objects.xml.Run;
 
@@ -77,35 +78,43 @@ public class GPController {
         sdrsController.stop();
     }
 
-    public List<Chromosome> getTopPercentageOfPopulation() {
+    public List<ChromosomeWrapper> getTopPercentageOfPopulation(int size) {
 
-        return populationController.getTopChromosomes(ConfigController.getPercentOfChromosomeToSaveInFullTreMethod());
+        return populationController.getTopChromosomes(size);
     }
 
     public void exportData() throws IOException, JAXBException {
-        System.out.println("Please set a transfer learning method, by entering the number:");
-        System.out.println("1 Full tree");
-        System.out.println("2 Sub-tree");
-        System.out.println("3 Best gen");
-        System.out.println("4 GPCR");
-        System.out.println("5 PST");
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        transferLearningMod = Integer.parseInt(reader.readLine());
 
         dataController.chanceMod();
 
         experiment = new Experiment(dataSetName, seed);
         experiment.setTransferLearningMethod(transferLearningMod);
 
-        evolveAnswers(1);
-        convertObjectToXML(experiment);
+        do {
+            System.out.println("Please set a transfer learning method, by entering the number:");
+            System.out.println("0 Exit");
+            System.out.println("1 Full tree");
+            System.out.println("2 Sub-tree");
+            System.out.println("3 Best gen");
+            System.out.println("4 GPCR");
+            System.out.println("5 PST");
 
-        if (transferLearningMod == 1){
-            transferLearningController.exportFullTree();
-        } else if (transferLearningMod == 2){
-            transferLearningController.exportSubTree();
-        }
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            transferLearningMod = Integer.parseInt(reader.readLine());
+            if (transferLearningMod == 0)
+                return;
+
+            evolveAnswers(1);
+            convertObjectToXML(experiment);
+
+            if (transferLearningMod == 1) {
+                transferLearningController.exportFullTree();
+            } else if (transferLearningMod == 2) {
+                transferLearningController.exportSubTree();
+            } else if (transferLearningMod == 3) {
+                transferLearningController.exportBestGen();
+            }
+        }while (transferLearningMod!= 0);
     }
 
     public void importData() {
@@ -146,7 +155,6 @@ public class GPController {
 
                 if (counter != 0 && counter % ConfigController.getNumberOfGenerationsBeforeEvolveMap() ==0){
                     sdrsController.evolveMap();
-                    System.out.println();
                 }
                 populationController.setChromosomes(newChromosomes);
 
@@ -163,6 +171,9 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     run.setRunSuccessful(false);
                     break;
+                }
+                if (transferLearningMod == 3){
+                    transferLearningController.addChromosomesToBestGenArray(getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInFullTreeMethod()));
                 }
                 System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
                 run.setNumberOfGenerations(counter+1);

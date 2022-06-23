@@ -49,7 +49,7 @@ public class Experiment {
         reproductionSize = ConfigController.getPercentOfReproduction();
         numberOfRuns = ConfigController.getNumberOfRuns();
         padding = ConfigController.getPadding();
-        percentOfChromosomeToSaveInFullTreMethod = ConfigController.getPercentOfChromosomeToSaveInFullTreMethod();
+        percentOfChromosomeToSaveInFullTreMethod = ConfigController.getPercentOfChromosomeToSaveInFullTreeMethod();
 
         runs = new LinkedList<>();
     }

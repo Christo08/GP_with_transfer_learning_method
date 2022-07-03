@@ -124,7 +124,7 @@ public class GPController {
 
                 List<ChromosomeWrapper> topPercentageOfPopulationForSourceTask2 = getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInGPCRMethod());
 
-                transferLearningController.exportGPCR(topPercentageOfPopulationForSourceTask1, topPercentageOfPopulationForSourceTask2);
+                transferLearningController.exportCSRP(topPercentageOfPopulationForSourceTask1, topPercentageOfPopulationForSourceTask2);
             }else if (transferLearningMod == 5) {
                 transferLearningController.exportPST(bestChromosomes);
             }

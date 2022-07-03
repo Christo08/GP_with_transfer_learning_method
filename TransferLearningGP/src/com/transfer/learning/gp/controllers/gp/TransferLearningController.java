@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class TransferLearningController {
     private GPController gpController;
@@ -141,7 +140,7 @@ public class TransferLearningController {
         return output;
     }
 
-    public void exportGPCR(List<ChromosomeWrapper> population1, List<ChromosomeWrapper> population2){
+    public void exportCSRP(List<ChromosomeWrapper> population1, List<ChromosomeWrapper> population2){
         String commonSubTrees ="";
         List<Chromosome> commonSubTree = new ArrayList<>();
         int counter =0;
@@ -157,18 +156,18 @@ public class TransferLearningController {
             commonSubTrees += chromosome.toString()+"\n";
         }
         try {
-            String pathToGPCRDataFile = pathToFolder+"\\GPCRData.txt";
-            File GPCRDataFile = new File(pathToGPCRDataFile);
-            GPCRDataFile.createNewFile();
-            FileWriter GPCRWriter = new FileWriter(GPCRDataFile);
-            GPCRWriter.write(commonSubTrees);
-            GPCRWriter.close();
+            String pathToCSRPDataFile = pathToFolder+"\\CSRPData.txt";
+            File csrpDataFile = new File(pathToCSRPDataFile);
+            csrpDataFile.createNewFile();
+            FileWriter csrpWriter = new FileWriter(csrpDataFile);
+            csrpWriter.write(commonSubTrees);
+            csrpWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public List<ChromosomeWrapper> importGPCR(){
+    public List<ChromosomeWrapper> importCSRP(){
         return new ArrayList<>();
 
     }

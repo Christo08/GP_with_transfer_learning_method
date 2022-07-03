@@ -52,15 +52,18 @@ public class ConfigController {
     private final static double percentOfReproduction = 0.2;
     private final static double percentOfCrossover = 0.5;
     private final static double percentOfMutation = 0.3;
-    private final static int numberOfGenerationsBeforeEvolveMap = 50;
+    private final static int numberOfGenerationsBeforeEvolveMap = 25;
     private final static int numberOfBatch = 4;
     private final static int numberOfRuns = 20;
     private final static int maxDepthOfCrossover = 50;
-    private final static int numberOfSameBeforeEnding = 50;
+    private final static int numberOfSameBeforeEnding = 25;
     private final static double padding = 0.05;
     private final static double percentOfChromosomeToSaveInFullTreeMethod = 0.5;
     private final static double percentOfChromosomeToSaveInSubTreeMethod = 0.5;
     private final static double percentOfChromosomeToSaveInGenMethod = 0.5;
+    private final static double percentOfChromosomeToSaveInGPCRMethod = 0.5;
+    private final static double percentOfChromosomeToSaveInPSTMethod = 0.5;
+    private final static int depthOfPSTTree = 5;
 
     public static int getMaxDepth() {
         return maxDepth;
@@ -152,5 +155,17 @@ public class ConfigController {
 
     public static int getPercentOfChromosomeToSaveInBestGenMethod() {
         return  (int) Math.round(percentOfChromosomeToSaveInGenMethod * populationSize);
+    }
+
+    public static int getPercentOfChromosomeToSaveInGPCRMethod() {
+        return  (int) Math.round(percentOfChromosomeToSaveInGPCRMethod * populationSize);
+    }
+
+    public static int getPercentOfChromosomeToSaveInPSTMethod() {
+        return  (int) Math.round(percentOfChromosomeToSaveInPSTMethod * populationSize);
+    }
+
+    public static int getDepthOfPSTTree() {
+        return depthOfPSTTree;
     }
 }

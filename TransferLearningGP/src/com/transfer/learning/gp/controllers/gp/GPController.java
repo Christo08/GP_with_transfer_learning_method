@@ -88,7 +88,6 @@ public class GPController {
         dataController.chanceMod();
 
         experiment = new Experiment(dataSetName, seed);
-        experiment.setTransferLearningMethod(transferLearningMod);
 
         do {
             System.out.println("Please set a transfer learning method, by entering the number:");
@@ -101,10 +100,11 @@ public class GPController {
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             transferLearningMod = Integer.parseInt(reader.readLine());
+            experiment.setTransferLearningMethod(transferLearningMod);
             if (transferLearningMod == 0)
                 return;
 
-            evolveAnswers(1);
+            Chromosome bestChromosomes = evolveAnswers(1);
             convertObjectToXML(experiment);
 
             if (transferLearningMod == 1) {
@@ -113,12 +113,59 @@ public class GPController {
                 transferLearningController.exportSubTree();
             } else if (transferLearningMod == 3) {
                 transferLearningController.exportBestGen();
+            }else if (transferLearningMod == 4) {
+                List<ChromosomeWrapper> topPercentageOfPopulationForSourceTask1 = getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInGPCRMethod());
+
+                this.populationController.clearPopulation();
+                dataController.chanceMod();
+                evolveAnswers(1);
+                convertObjectToXML(experiment);
+                dataController.chanceMod();
+
+                List<ChromosomeWrapper> topPercentageOfPopulationForSourceTask2 = getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInGPCRMethod());
+
+                transferLearningController.exportGPCR(topPercentageOfPopulationForSourceTask1, topPercentageOfPopulationForSourceTask2);
+            }else if (transferLearningMod == 5) {
+                transferLearningController.exportPST(bestChromosomes);
             }
         }while (transferLearningMod!= 0);
     }
 
-    public void importData() {
+    public void importData() throws IOException, JAXBException {
+        experiment = new Experiment(dataSetName, seed);
 
+        do {
+            System.out.println("Please set a transfer learning method, by entering the number:");
+            System.out.println("0 Exit");
+            System.out.println("1 Full tree");
+            System.out.println("2 Sub-tree");
+            System.out.println("3 Best gen");
+            System.out.println("4 GPCR");
+            System.out.println("5 PST");
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            transferLearningMod = Integer.parseInt(reader.readLine());
+            experiment.setTransferLearningMethod(transferLearningMod);
+            if (transferLearningMod == 0)
+                return;
+
+            if (transferLearningMod == 1) {
+                populationController.replaceChromosomes(transferLearningController.importFullTree());
+            } else if (transferLearningMod == 2) {
+                populationController.replaceChromosomes(transferLearningController.importSubTree());
+            } else if (transferLearningMod == 3) {
+                populationController.replaceChromosomes(transferLearningController.importBestGen());
+            }else if (transferLearningMod == 4) {
+
+            }else if (transferLearningMod == 5) {
+
+            }
+
+            for (int counter =0; counter < ConfigController.getNumberOfRuns(); counter++){
+                evolveAnswers((counter+1));
+                convertObjectToXML(experiment);
+            }
+        }while (transferLearningMod!= 0);
     }
 
     public String getPathToExperiment() {
@@ -173,7 +220,7 @@ public class GPController {
                     break;
                 }
                 if (transferLearningMod == 3){
-                    transferLearningController.addChromosomesToBestGenArray(getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInFullTreeMethod()));
+                    transferLearningController.addChromosomesToBestGenArray(getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInBestGenMethod()));
                 }
                 System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
                 run.setNumberOfGenerations(counter+1);

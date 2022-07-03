@@ -16,6 +16,11 @@ public class Chromosome {
     private int numberOfNodesInTree;
     public static int numberOfNodes;
 
+    public Chromosome() {
+        children = new LinkedList<>();
+        symbol = "#";
+    }
+
     public Chromosome(Chromosome chromosomes) {
         type = chromosomes.type;
         symbol = chromosomes.symbol;
@@ -25,6 +30,82 @@ public class Chromosome {
         for (Chromosome child: chromosomes.children) {
             children.add(new Chromosome(child));
         }
+    }
+
+    public Chromosome(String chromosome) {
+        type = 'd';
+        numberOfNodes = 1;
+        nodeID = numberOfNodes;
+        numberOfNodes++;
+
+        chromosome = chromosome.substring(1,chromosome.length()-1);
+        symbol = PopulationController.validSymbol(chromosome.substring(0, chromosome.indexOf(" (")));
+        chromosome = chromosome.substring(chromosome.indexOf(" (")).trim();
+
+        int numberOfBrackets =0;
+        int startOfChild =0;
+        int endOfChild =0;
+        List<String> childrenStrings = new ArrayList<>();
+        for (char character: chromosome.toCharArray()) {
+            if (character == '('){
+                numberOfBrackets++;
+            } else if (character == ')'){
+                numberOfBrackets--;
+            }
+            endOfChild++;
+            if (numberOfBrackets == 0){
+                childrenStrings.add(chromosome.substring(startOfChild, endOfChild));
+                startOfChild = endOfChild;
+            }
+        }
+        childrenStrings.removeIf(childrenString -> childrenString.isEmpty() || childrenString.equals(" "));
+        children = new LinkedList<>();
+        List<Character> childTypes = PopulationController.getChildrenTypes(symbol);
+        for (int counter =0; counter < childrenStrings.size();counter++) {
+            children.add(new Chromosome(childrenStrings.get(counter),childTypes.get(counter)));
+        }
+        numberOfNodesInTree = numberOfNodes;
+    }
+
+    public Chromosome(String chromosome, char type) {
+        this.type = type;
+        nodeID = numberOfNodes;
+        numberOfNodes++;
+
+        chromosome = chromosome.substring(2,chromosome.length()-2);
+        if (chromosome.contains("("))
+            symbol = chromosome.substring(0, chromosome.indexOf(" ("));
+        else {
+            symbol = chromosome;
+            numberOfNodesInTree = numberOfNodes;
+            children = new LinkedList<>();
+            return;
+        }
+        chromosome = chromosome.substring(chromosome.indexOf(" (")).trim();
+
+        int numberOfBrackets =0;
+        int startOfChild =0;
+        int endOfChild =0;
+        List<String> childrenStrings = new ArrayList<>();
+        for (char character: chromosome.toCharArray()) {
+            if (character == '('){
+                numberOfBrackets++;
+            } else if (character == ')'){
+                numberOfBrackets--;
+            }
+            endOfChild++;
+            if (numberOfBrackets == 0){
+                childrenStrings.add(chromosome.substring(startOfChild, endOfChild));
+                startOfChild = endOfChild;
+            }
+        }
+        childrenStrings.removeIf(childrenString -> childrenString.isEmpty() || childrenString.equals(" "));
+        children = new LinkedList<>();
+        List<Character> childTypes = PopulationController.getChildrenTypes(symbol);
+        for (int counter =0; counter < childrenStrings.size();counter++) {
+            children.add(new Chromosome(childrenStrings.get(counter),childTypes.get(counter)));
+        }
+        numberOfNodesInTree = numberOfNodes;
     }
 
     public Chromosome(int depth, boolean isFullMethod) {
@@ -107,82 +188,6 @@ public class Chromosome {
                 children.add(new Chromosome(depth, childType,isFullMethod));
             }
         }
-    }
-
-    public Chromosome(String chromosome) {
-        type = 'd';
-        numberOfNodes = 1;
-        nodeID = numberOfNodes;
-        numberOfNodes++;
-
-        chromosome = chromosome.substring(1,chromosome.length()-1);
-        symbol = chromosome.substring(0, chromosome.indexOf(" ("));
-        chromosome = chromosome.substring(chromosome.indexOf(" (")).trim();
-
-        int numberOfBrackets =0;
-        int startOfChild =0;
-        int endOfChild =0;
-        List<String> childrenStrings = new ArrayList<>();
-        for (char character: chromosome.toCharArray()) {
-            if (character == '('){
-                numberOfBrackets++;
-            } else if (character == ')'){
-                numberOfBrackets--;
-            }
-            endOfChild++;
-            if (numberOfBrackets == 0){
-                childrenStrings.add(chromosome.substring(startOfChild, endOfChild));
-                startOfChild = endOfChild;
-            }
-        }
-        childrenStrings.removeIf(childrenString -> childrenString.isEmpty() || childrenString.equals(" "));
-        children = new LinkedList<>();
-        List<Character> childTypes = PopulationController.getChildrenTypes(symbol);
-        for (int counter =0; counter < childrenStrings.size();counter++) {
-            children.add(new Chromosome(childrenStrings.get(counter),childTypes.get(counter)));
-        }
-        numberOfNodesInTree = numberOfNodes;
-    }
-
-    public Chromosome(String chromosome, char type) {
-        this.type = type;
-        nodeID = numberOfNodes;
-        numberOfNodes++;
-
-        chromosome = chromosome.substring(2,chromosome.length()-2);
-        if (chromosome.contains("("))
-            symbol = chromosome.substring(0, chromosome.indexOf(" ("));
-        else {
-            symbol = chromosome;
-            numberOfNodesInTree = numberOfNodes;
-            children = new LinkedList<>();
-            return;
-        }
-        chromosome = chromosome.substring(chromosome.indexOf(" (")).trim();
-
-        int numberOfBrackets =0;
-        int startOfChild =0;
-        int endOfChild =0;
-        List<String> childrenStrings = new ArrayList<>();
-        for (char character: chromosome.toCharArray()) {
-            if (character == '('){
-                numberOfBrackets++;
-            } else if (character == ')'){
-                numberOfBrackets--;
-            }
-            endOfChild++;
-            if (numberOfBrackets == 0){
-                childrenStrings.add(chromosome.substring(startOfChild, endOfChild));
-                startOfChild = endOfChild;
-            }
-        }
-        childrenStrings.removeIf(childrenString -> childrenString.isEmpty() || childrenString.equals(" "));
-        children = new LinkedList<>();
-        List<Character> childTypes = PopulationController.getChildrenTypes(symbol);
-        for (int counter =0; counter < childrenStrings.size();counter++) {
-            children.add(new Chromosome(childrenStrings.get(counter),childTypes.get(counter)));
-        }
-        numberOfNodesInTree = numberOfNodes;
     }
 
     public char getType() {
@@ -312,5 +317,79 @@ public class Chromosome {
         result = 31 * result + (symbol != null ? symbol.hashCode() : 0);
         result = 31 * result + nodeID;
         return result;
+    }
+
+    public List<Chromosome> getNodes() {
+        List<Chromosome> chromosomes = new LinkedList<>();
+        chromosomes.add(this);
+        for (Chromosome child : children) {
+            chromosomes.addAll(child.getNodes());
+        }
+        return chromosomes;
+    }
+
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public void setType(char type) {
+        this.type = type;
+    }
+
+    public void setSymbol(String symbol) {
+        this.symbol = symbol;
+    }
+
+    public Chromosome getChild(int counter) {
+        return children.get(counter);
+    }
+
+    public void addChild(Chromosome commonSubTree) {
+        children.add(commonSubTree);
+    }
+
+    public Chromosome getCommonSubTree(Chromosome nodeY) {
+        Chromosome newTree;
+        if (!this.symbol.equals(nodeY.symbol) || children.size() ==0){
+            newTree = new Chromosome();
+            if (!PopulationController.terminalSetContains(this.symbol) && this.symbol.equals(nodeY.getSymbol()))
+                newTree.setSymbol(this.symbol);
+        }else{
+            newTree = new Chromosome();
+            newTree.setSymbol(this.getSymbol());
+            newTree.setType(this.getType());
+            for (int counter =0; counter< children.size(); counter++) {
+                newTree.addChild(children.get(counter).getCommonSubTree(nodeY.getChild(counter)));
+            }
+        }
+        return newTree;
+    }
+
+    public int getMaxDepth() {
+        int maxDepth =0;
+        for (Chromosome child : children) {
+            int tempDepth = child.getMaxDepth();
+            if (maxDepth < tempDepth){
+                maxDepth = tempDepth;
+            }
+        }
+        return maxDepth+1;
+    }
+
+    public Chromosome getSubTreeOfDepth(int depth) {
+        Chromosome newTree;
+        if (children.size() ==0 || depth == 1) {
+            newTree = new Chromosome();
+            if (!PopulationController.terminalSetContains(this.symbol))
+                newTree.setSymbol(this.symbol);
+        }else{
+            newTree = new Chromosome();
+            newTree.setSymbol(this.getSymbol());
+            newTree.setType(this.getType());
+            for (int counter =0; counter< children.size(); counter++) {
+                newTree.addChild(children.get(counter).getSubTreeOfDepth(depth-1));
+            }
+        }
+        return newTree;
     }
 }

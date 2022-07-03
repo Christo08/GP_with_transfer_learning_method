@@ -8,12 +8,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TransferLearningController {
     private GPController gpController;
     private String pathToFolder;
     private List<List<ChromosomeWrapper>> bestGenChromosomes;
+    private NumberFormat formatter = new DecimalFormat("#0.0000");
 
     public TransferLearningController(GPController gpController) {
         this.gpController = gpController;
@@ -45,9 +49,9 @@ public class TransferLearningController {
             String pathToFullTreeDataFile = pathToFolder+"\\bestGenData.txt";
             File fullTreeDataFile = new File(pathToFullTreeDataFile);
             fullTreeDataFile.createNewFile();
-            FileWriter seedsTestingWriter = new FileWriter(fullTreeDataFile);
-            seedsTestingWriter.write(outputString);
-            seedsTestingWriter.close();
+            FileWriter bestGenWriter = new FileWriter(fullTreeDataFile);
+            bestGenWriter.write(outputString);
+            bestGenWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -76,9 +80,9 @@ public class TransferLearningController {
             String pathToFullTreeDataFile = pathToFolder+"\\fullTreeData.txt";
             File fullTreeDataFile = new File(pathToFullTreeDataFile);
             fullTreeDataFile.createNewFile();
-            FileWriter seedsTestingWriter = new FileWriter(fullTreeDataFile);
-            seedsTestingWriter.write(outputString);
-            seedsTestingWriter.close();
+            FileWriter fullTreeWriter = new FileWriter(fullTreeDataFile);
+            fullTreeWriter.write(outputString);
+            fullTreeWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -115,9 +119,9 @@ public class TransferLearningController {
             String pathToFullTreeDataFile = pathToFolder+"\\subTreeData.txt";
             File fullTreeDataFile = new File(pathToFullTreeDataFile);
             fullTreeDataFile.createNewFile();
-            FileWriter seedsTestingWriter = new FileWriter(fullTreeDataFile);
-            seedsTestingWriter.write(outputString);
-            seedsTestingWriter.close();
+            FileWriter subTreeWriter = new FileWriter(fullTreeDataFile);
+            subTreeWriter.write(outputString);
+            subTreeWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -125,34 +129,40 @@ public class TransferLearningController {
     }
 
     public List<ChromosomeWrapper> importSubTree() throws FileNotFoundException {
-        String pathsToRawFullTreeDataset = pathToFolder+"\\bestGenData.txt";
-        File fullTreeFile = new File(pathsToRawFullTreeDataset);
-        Scanner fullTreeReader = new Scanner(fullTreeFile);
+        String pathsToRawBestGenDataset = pathToFolder+"\\bestGenData.txt";
+        File bestGenFile = new File(pathsToRawBestGenDataset);
+        Scanner bestGenReader = new Scanner(bestGenFile);
 
         List<ChromosomeWrapper>  output = new ArrayList<>();
-        while (fullTreeReader.hasNextLine()){
-            output.add(new ChromosomeWrapper(new Chromosome(fullTreeReader.nextLine().trim())));
+        while (bestGenReader.hasNextLine()){
+            output.add(new ChromosomeWrapper(new Chromosome(bestGenReader.nextLine().trim())));
         }
-        fullTreeReader.close();
+        bestGenReader.close();
         return output;
     }
 
-    public void exportGPCR(List<Chromosome> population1, List<Chromosome> population2){
+    public void exportGPCR(List<ChromosomeWrapper> population1, List<ChromosomeWrapper> population2){
         String commonSubTrees ="";
-        for (Chromosome chromosomeOfPopulation1 : population1) {
-            for (Chromosome chromosomeOfPopulation2 : population2) {
-                String commonSubTree = getCommonSubTree(chromosomeOfPopulation1.toString(),chromosomeOfPopulation2.toString());
-                if (!commonSubTree.isEmpty())
-                    commonSubTrees += commonSubTree+'\n';
+        List<Chromosome> commonSubTree = new ArrayList<>();
+        int counter =0;
+        for (ChromosomeWrapper chromosomeOfPopulation1 : population1) {
+            for (ChromosomeWrapper chromosomeOfPopulation2 : population2) {
+                List<Chromosome> functionSet = PopulationController.getCommonSubTree(chromosomeOfPopulation1.chromosome,chromosomeOfPopulation2.chromosome);
+                commonSubTree.addAll(functionSet);
+                counter++;
+                printProgress(counter,(population1.size() * population2.size()));
             }
         }
+        for (Chromosome chromosome : commonSubTree) {
+            commonSubTrees += chromosome.toString()+"\n";
+        }
         try {
-            String pathToFullTreeDataFile = pathToFolder+"\\GPCRData.txt";
-            File fullTreeDataFile = new File(pathToFullTreeDataFile);
-            fullTreeDataFile.createNewFile();
-            FileWriter seedsTestingWriter = new FileWriter(fullTreeDataFile);
-            seedsTestingWriter.write(commonSubTrees);
-            seedsTestingWriter.close();
+            String pathToGPCRDataFile = pathToFolder+"\\GPCRData.txt";
+            File GPCRDataFile = new File(pathToGPCRDataFile);
+            GPCRDataFile.createNewFile();
+            FileWriter GPCRWriter = new FileWriter(GPCRDataFile);
+            GPCRWriter.write(commonSubTrees);
+            GPCRWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -163,8 +173,25 @@ public class TransferLearningController {
 
     }
 
-    public void exportPST(List<Chromosome> population1, List<Chromosome> population2){
-
+    public void exportPST(Chromosome bestChromosome){
+        String chromosomeSubTrees ="";
+        List<Chromosome> subTrees = PopulationController.getSubTrees(bestChromosome);
+        subTrees.removeIf(subTree -> subTrees.stream()
+                                               .anyMatch(subTree1 -> subTree1.toString().contains(subTree.toString())));
+        subTrees.removeIf(chromosome -> chromosome.getMaxDepth() > ConfigController.getDepthOfPSTTree());
+        for (Chromosome subTree : subTrees) {
+            chromosomeSubTrees += subTree.toString()+"\n";
+        }
+        try {
+            String pathToPSTDataFile = pathToFolder+"\\PSTData.txt";
+            File pstDataFile = new File(pathToPSTDataFile);
+            pstDataFile.createNewFile();
+            FileWriter PSTWriter = new FileWriter(pstDataFile);
+            PSTWriter.write(chromosomeSubTrees);
+            PSTWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public List<ChromosomeWrapper> importPST(){
@@ -187,47 +214,14 @@ public class TransferLearningController {
         return (total/bestGenChromosome.size()) *100;
     }
 
-    private String getCommonSubTree(String chromosomeOfPopulation1, String chromosomeOfPopulation2){
-        int m = chromosomeOfPopulation1.length();
-        int n = chromosomeOfPopulation2.length();
+    protected void printProgress(double current, double total) {
+        StringBuilder string = new StringBuilder(140);
+        double percent = (current/total)* 100;
+        string.append('\r')
+                .append(formatter.format(percent))
+                .append("% export");
 
-        int max = 0;
-        int maxIIndex =0;
-        int maxJIndex =0;
-
-        int[][] dp = new int[m][n];
-
-        for(int i=0; i<m; i++){
-            for(int j=0; j<n; j++){
-                if(chromosomeOfPopulation1.charAt(i) == chromosomeOfPopulation2.charAt(j)){
-                    if(i==0 || j==0){
-                        dp[i][j]=1;
-                    }else{
-                        dp[i][j] = dp[i-1][j-1]+1;
-                    }
-
-                    if(max < dp[i][j]) {
-                        max = dp[i][j];
-                        maxIIndex = i;
-                        maxJIndex = j;
-                    }
-                }
-
-            }
-        }
-
-        List<Character> outputChars = new ArrayList<>();
-        int number = dp[maxIIndex][maxJIndex];
-        while(number != 0){
-            outputChars.add(chromosomeOfPopulation1.charAt(maxIIndex));
-            maxIIndex--;
-            maxJIndex--;
-            number = dp[maxIIndex][maxJIndex];
-        }
-        String output ="";
-        for (int counter = outputChars.size()-1; counter>=0; counter--) {
-            output += outputChars.get(counter);
-        }
-        return output;
+        System.out.print(string);
     }
+
 }

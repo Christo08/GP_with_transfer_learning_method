@@ -43,6 +43,32 @@ public class PopulationController {
         }
     }
 
+    public static boolean terminalSetContains(String symbol) {
+        return terminalSet.contains(symbol);
+    }
+
+    public static String validSymbol(String symbol) {
+        if (terminalSet.contains(symbol) ||
+            logicFunctionSet.containsKey(symbol) ||
+            mathematicalFunctionSet.containsKey(symbol))
+            return symbol;
+        else
+            return getRandomSymbolFromTerminalSet();
+    }
+
+    public static List<Chromosome> getSubTrees(Chromosome bestChromosome) {
+        List<Chromosome> nodesOfChromosomes = bestChromosome.getNodes();
+        List<Chromosome> output = new ArrayList<>();
+        for (Chromosome nodesOfChromosome : nodesOfChromosomes) {
+            for (int counter =1; counter <= ConfigController.getDepthOfPSTTree(); counter++){
+                Chromosome newSubTree = nodesOfChromosome.getSubTreeOfDepth(counter);
+                if (output.stream().anyMatch(subTree -> subTree.toString().equals(newSubTree.toString())))
+                    output.add(newSubTree);
+            }
+        }
+        return output;
+    }
+
     private boolean containsChromosome(Chromosome newChromosome) {
         for (ChromosomeWrapper chromosomeWrapper : chromosomes) {
             if (chromosomeWrapper.chromosome.hashCode() == newChromosome.hashCode())
@@ -152,7 +178,7 @@ public class PopulationController {
     public static String getRandomSymbolFromTerminalSet() {
         String symbol =  terminalSet.get(GPController.getRandom().nextInt(terminalSet.size()-1));
         if (symbol.equals("rand")) {
-            return Double.toString((GPController.getRandom().nextDouble() - 0.5) * 2);
+            return Double.toString((GPController.getRandom().nextDouble() * 20)-10);
         }
         return symbol;
     }
@@ -181,6 +207,42 @@ public class PopulationController {
 
     }
 
+    public static List<Chromosome> getCommonSubTree(Chromosome chromosomeOfPopulation1, Chromosome chromosomeOfPopulation2){
+
+        List<Chromosome> nodesOfChromosomesX = chromosomeOfPopulation1.getNodes();
+        List<Chromosome> nodesOfChromosomesY = chromosomeOfPopulation2.getNodes();
+
+        Map<Chromosome,List<Chromosome>> commonXNodes = new HashMap<>();
+
+        for (Chromosome nodeX:nodesOfChromosomesX) {
+            List<Chromosome> nodesInCommon = nodesOfChromosomesY.stream()
+                    .filter(nodeY -> nodeY.getSymbol().equals(nodeX.getSymbol()))
+                    .collect(Collectors.toList());
+            if (nodesInCommon.size() != 0){
+                commonXNodes.put(nodeX,nodesInCommon);
+            }
+        }
+
+        Map<Chromosome,List<Chromosome>> commonTrees = new HashMap<>();
+        for (Chromosome nodeX : commonXNodes.keySet()) {
+            List<Chromosome> subTrees = new ArrayList<>();
+            for (Chromosome nodeY : commonXNodes.get(nodeX)) {
+                Chromosome commonTree = nodeX.getCommonSubTree(nodeY);
+                commonTree.renumberTheNodes(true);
+                subTrees.add(commonTree);
+            }
+            commonTrees.put(nodeX,subTrees);
+        }
+        List<Chromosome> functionSet = new ArrayList<>();
+        for (Chromosome node : commonTrees.keySet()) {
+            for (Chromosome function : commonTrees.get(node)) {
+                if (!functionSet.stream().anyMatch(saveFunction -> saveFunction.toString().equals(function.toString())))
+                    functionSet.add(function);
+            }
+        }
+        return functionSet;
+    }
+
     public void setChromosomes(List<Chromosome> newChromosomes) {
         this.chromosomes = new ArrayList<>();
         for (int counter =0;  counter < newChromosomes.size(); counter++)
@@ -201,5 +263,32 @@ public class PopulationController {
             output.add(chromosomes.get(counter));
         }
         return output;
+    }
+
+    public void replaceChromosomes(List<ChromosomeWrapper> importFullTree) {
+        this.chromosomes = importFullTree;
+        for (int counter =chromosomes.size();  counter < ConfigController.getPopulationSize(); counter++)
+        {
+            Chromosome newChromosome;
+            do {
+                newChromosome = new Chromosome(ConfigController.getMaxDepth(),(counter% 2 ==0));
+            }while (containsChromosome(newChromosome));
+            ChromosomeWrapper newChromosomeWrapper = new ChromosomeWrapper(newChromosome);
+            chromosomes.add(newChromosomeWrapper);
+        }
+    }
+
+    public void clearPopulation() {
+        chromosomes.clear();
+
+        for (int counter =0;  counter < ConfigController.getPopulationSize(); counter++)
+        {
+            Chromosome newChromosome;
+            do {
+                newChromosome = new Chromosome(ConfigController.getMaxDepth(),(counter% 2 ==0));
+            }while (containsChromosome(newChromosome));
+            ChromosomeWrapper newChromosomeWrapper = new ChromosomeWrapper(newChromosome);
+            chromosomes.add(newChromosomeWrapper);
+        }
     }
 }

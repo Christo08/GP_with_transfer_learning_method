@@ -23,7 +23,6 @@ public class GPController {
 
     private DataController dataController;
     private PopulationController populationController;
-    private SDRSController sdrsController;
     private String dataSetName;
     private long seed;
     private double oldBestChromosomesAccuracy;
@@ -49,7 +48,6 @@ public class GPController {
             this.dataController = new TargetTaskDataController(pathToExperiment+"\\Cleaned",dataSetName);
 
         this.populationController = new PopulationController();
-        this.sdrsController = new SDRSController(this, dataController, populationController);
         this.transferLearningController = new TransferLearningController(this);
     }
 
@@ -60,8 +58,7 @@ public class GPController {
     public double fitnessOfChromosomes(int counter) {
         double numberOfCorrect =0;
         for (Map<String, Double> dataLine: dataController.getDataSet()) {
-            String chromosomesOutput = sdrsController.getClass(populationController.evaluateChromosomes(dataLine,counter));
-            if (chromosomesOutput.equals(dataLine.get("ans").toString()))
+            if (populationController.evaluateChromosomes(dataLine,counter) == dataLine.get("ans"))
                 numberOfCorrect++;
         }
         return numberOfCorrect/((double)dataController.getDataSet().size()) * 100;
@@ -75,7 +72,6 @@ public class GPController {
             convertObjectToXML(experiment);
         }
         System.out.println("Finished");
-        sdrsController.stop();
     }
 
     public List<ChromosomeWrapper> getTopPercentageOfPopulation(int size) {
@@ -200,9 +196,6 @@ public class GPController {
                     newChromosomes.addAll(populationController.crossoverChromosomes(crossoverIndexes.get(counter1),crossoverIndexes.get(counter1+1)));
                 }
 
-                if (counter != 0 && counter % ConfigController.getNumberOfGenerationsBeforeEvolveMap() ==0){
-                    sdrsController.evolveMap();
-                }
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
@@ -260,8 +253,8 @@ public class GPController {
                 maxFitness =fitness;
                 chromosomesIndex = counter;
             }
+            System.out.println(counter);
         }
-        populationController.sortedPopulation();
         return chromosomesIndex;
     }
 
@@ -285,8 +278,7 @@ public class GPController {
         double numberOfCorrect =0;
         dataController.chanceMod();
         for (Map<String, Double> dataLine: dataController.getDataSet()) {
-            String chromosomesOutput = sdrsController.getClass(populationController.evaluateChromosomes(dataLine,counter));
-            if (chromosomesOutput.equals(dataLine.get("ans").toString()))
+            if (populationController.evaluateChromosomes(dataLine,counter) == dataLine.get("ans"))
                 numberOfCorrect++;
         }
         dataController.chanceMod();

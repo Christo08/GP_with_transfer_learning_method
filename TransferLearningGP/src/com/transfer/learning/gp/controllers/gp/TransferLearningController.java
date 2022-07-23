@@ -169,7 +169,6 @@ public class TransferLearningController {
 
     public List<ChromosomeWrapper> importCSRP(){
         return new ArrayList<>();
-
     }
 
     public void exportPST(Chromosome bestChromosome){

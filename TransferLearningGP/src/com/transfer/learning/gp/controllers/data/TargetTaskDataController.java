@@ -40,13 +40,14 @@ public class TargetTaskDataController extends DataController {
                     if (counter == splitLine.size()-1)
                     {
                         dataLine.put("ans", number-1);
+                        PopulationController.addClassToConsequentSet(String.valueOf(number-1));
                     }
                     else
                     {
-                        String attributeName = String.valueOf((char)(65+counter));
+                        String attributeName = String.valueOf((char) (65 + counter));
                         if (numberOfLines ==1)
                         {
-                            PopulationController.addAttributeToFunctionSet(attributeName);
+                            PopulationController.addAttributeToMathSet(attributeName);
                         }
                         dataLine.put(attributeName, number);
                     }
@@ -76,17 +77,18 @@ public class TargetTaskDataController extends DataController {
                 Map<String, Double> dataLine = new HashMap<>();
                 for (int counter =0; counter < splitLine.size(); counter++)
                 {
-                    double number = Double.parseDouble(splitLine.get(counter))-1;
+                    double number = Double.parseDouble(splitLine.get(counter));
                     if (counter == splitLine.size()-1)
                     {
-                        dataLine.put("ans", number);
+                        dataLine.put("ans", number-1);
+                        PopulationController.addClassToConsequentSet(String.valueOf(number-1));
                     }
                     else
                     {
-                        String attributeName = String.valueOf((char)(65+counter));
+                        String attributeName = String.valueOf((char) (65 + counter));
                         if (numberOfLines ==1)
                         {
-                            PopulationController.addAttributeToFunctionSet(attributeName);
+                            PopulationController.addAttributeToMathSet(attributeName);
                         }
                         dataLine.put(attributeName, number);
                     }

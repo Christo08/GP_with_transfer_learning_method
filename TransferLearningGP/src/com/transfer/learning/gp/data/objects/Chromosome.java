@@ -32,21 +32,21 @@ public class Chromosome {
         }
     }
 
-    public Chromosome(String chromosome) {
-        type = 'd';
+    public Chromosome(String chromosomeString) {
+        chromosomeString = chromosomeString.substring(1,chromosomeString.length()-1);
+        symbol = PopulationController.getValidSymbol(chromosomeString.substring(0, chromosomeString.indexOf(" (")));
+        chromosomeString = chromosomeString.substring(chromosomeString.indexOf(" (")).trim();
+
+        type = 'c';
         numberOfNodes = 1;
         nodeID = numberOfNodes;
         numberOfNodes++;
-
-        chromosome = chromosome.substring(1,chromosome.length()-1);
-        symbol = PopulationController.validSymbol(chromosome.substring(0, chromosome.indexOf(" (")));
-        chromosome = chromosome.substring(chromosome.indexOf(" (")).trim();
 
         int numberOfBrackets =0;
         int startOfChild =0;
         int endOfChild =0;
         List<String> childrenStrings = new ArrayList<>();
-        for (char character: chromosome.toCharArray()) {
+        for (char character: chromosomeString.toCharArray()) {
             if (character == '('){
                 numberOfBrackets++;
             } else if (character == ')'){
@@ -54,15 +54,17 @@ public class Chromosome {
             }
             endOfChild++;
             if (numberOfBrackets == 0){
-                childrenStrings.add(chromosome.substring(startOfChild, endOfChild));
+                childrenStrings.add(chromosomeString.substring(startOfChild, endOfChild));
                 startOfChild = endOfChild;
             }
         }
         childrenStrings.removeIf(childrenString -> childrenString.isEmpty() || childrenString.equals(" "));
         children = new LinkedList<>();
-        List<Character> childTypes = PopulationController.getChildrenTypes(symbol);
-        for (int counter =0; counter < childrenStrings.size();counter++) {
-            children.add(new Chromosome(childrenStrings.get(counter),childTypes.get(counter)));
+        if (childrenStrings.size() > 0){
+            List<Character> childTypes = PopulationController.getChildrenTypes(symbol);
+            for (int counter =0; counter < childrenStrings.size();counter++) {
+                children.add(new Chromosome(childrenStrings.get(counter),childTypes.get(counter)));
+            }
         }
         numberOfNodesInTree = numberOfNodes;
     }
@@ -109,34 +111,22 @@ public class Chromosome {
     }
 
     public Chromosome(int depth, boolean isFullMethod) {
-        type = 'd';
+        type = 'c';
         numberOfNodes = 1;
         nodeID = numberOfNodes;
         numberOfNodes++;
         if (depth == 1){
-            symbol = PopulationController.getRandomSymbolFromTerminalSet();
-        }else {
-            do {
-                if (isFullMethod) {
-                    if (this.type == 'd') {
-                        symbol = PopulationController.getRandomSymbolFromMathematicalFunctionSet();
-                    } else {
-                        symbol = PopulationController.getRandomSymbolFromLogicFunctionSet();
-                    }
-                } else {
-                    if (this.type == 'd') {
-                        if (GPController.getRandom().nextBoolean()) {
-                            symbol = PopulationController.getRandomSymbolFromMathematicalFunctionSet();
-                        } else {
-                            symbol = PopulationController.getRandomSymbolFromTerminalSet();
-                        }
-                    } else {
-                        symbol = PopulationController.getRandomSymbolFromLogicFunctionSet();
-                    }
-
+            symbol = PopulationController.getRandomAttribute();
+        }else{
+            if (isFullMethod) {
+                if (depth - 2 == 0){
+                    symbol = PopulationController.getRandomAttribute();
+                }else {
+                    symbol = "IF";
                 }
+            } else {
+                symbol = PopulationController.getRandomSymbolFromConsequentSet();
             }
-            while (symbol.equals("IF") && depth - 2 < 1);
         }
         children = new LinkedList<>();
         List<Character> childTypes = PopulationController.getChildrenTypes(symbol);
@@ -146,7 +136,7 @@ public class Chromosome {
                 children.add(new Chromosome(depth, childType,isFullMethod));
             }
         }
-        numberOfNodesInTree = numberOfNodes;
+        numberOfNodesInTree = numberOfNodes - nodeID;
         numberOfNodes =0;
     }
 
@@ -154,32 +144,38 @@ public class Chromosome {
         this.type = type;
         nodeID = numberOfNodes;
         numberOfNodes++;
-        numberOfNodesInTree = numberOfNodes;
         if (depth == 1){
-            symbol = PopulationController.getRandomSymbolFromTerminalSet();
-        }else {
+            if (this.type == 'c'){
+                symbol = PopulationController.getRandomAttribute();
+            }else{
+                symbol =PopulationController.getRandomSymbolFromMathematicalTerminalSet();
+            }
+        }else{
             do {
                 if (isFullMethod) {
                     if (this.type == 'd') {
                         symbol = PopulationController.getRandomSymbolFromMathematicalFunctionSet();
-                    } else {
-                        symbol = PopulationController.getRandomSymbolFromLogicFunctionSet();
+                    } else if (this.type == 'b') {
+                        symbol = PopulationController.getRandomSymbolFromBooleanFunctionSet();
+                    } else if (depth - 2 ==0){
+                        symbol = PopulationController.getRandomAttribute();
+                    }else {
+                        symbol = "IF";
                     }
                 } else {
-                    if (this.type == 'd') {
-                        if (GPController.getRandom().nextBoolean()) {
-                            symbol = PopulationController.getRandomSymbolFromMathematicalFunctionSet();
-                        } else {
-                            symbol = PopulationController.getRandomSymbolFromTerminalSet();
-                        }
-                    } else {
-                        symbol = PopulationController.getRandomSymbolFromLogicFunctionSet();
+                    if (this.type == 'd'){
+                        symbol = PopulationController.getRandomSymbolFromMathematicalSet();
+                    } else if (this.type == 'b') {
+                        symbol = PopulationController.getRandomSymbolFromBooleanSet();
+                    } else{
+                        symbol = PopulationController.getRandomSymbolFromConsequentSet();
                     }
 
                 }
             }
             while (symbol.equals("IF") && depth - 2 < 1);
         }
+
         children = new LinkedList<>();
         List<Character> childTypes = PopulationController.getChildrenTypes(symbol);
         depth -=1;
@@ -188,6 +184,7 @@ public class Chromosome {
                 children.add(new Chromosome(depth, childType,isFullMethod));
             }
         }
+        numberOfNodesInTree = numberOfNodes - nodeID;
     }
 
     public char getType() {
@@ -203,48 +200,48 @@ public class Chromosome {
     }
 
     public double evaluate() {
-        double output;
-        if (symbol.equals("IF")) {
-            if (children.get(0).evaluateBoolean()) {
-                output = children.get(1).evaluate();
+        if (symbol.equals("IF")){
+            if (children.get(0).evaluateBoolean()){
+                return children.get(1).evaluate();
             }else{
-                output = children.get(2).evaluate();
+                return children.get(2).evaluate();
             }
+        }else{
+            return Double.parseDouble(symbol);
         }
-        else if (symbol.equals("+")){
-            output = children.get(0).evaluate() + children.get(1).evaluate();
-        }
-        else if (symbol.equals("-")){
-            output = children.get(0).evaluate() - children.get(1).evaluate();
-        }
-        else if (symbol.equals("*")){
-            output = children.get(0).evaluate() * children.get(1).evaluate();
-        }
-        else if (symbol.equals("/")){
-            double childTwoValue = children.get(1).evaluate();
-            if (childTwoValue == 0)
-                output = 0;
-            else
-                output = children.get(0).evaluate() / childTwoValue;
-        }
-        else {
-            output = PopulationController.getValueOf(symbol);
-        }
-        return output;
     }
 
     private boolean evaluateBoolean() {
-        double outputOfChildOne = children.get(0).evaluate();
-        double outputOfChildTwo = children.get(1).evaluate();
-        if (symbol.contains(("<=")))
-            return outputOfChildOne <= outputOfChildTwo;
-        else if (symbol.contains((">=")))
-            return outputOfChildOne >= outputOfChildTwo;
-        else if (symbol.contains(("==")))
-            return outputOfChildOne <= outputOfChildTwo;
-        else
-            return outputOfChildOne > outputOfChildTwo &&
-                   outputOfChildOne < children.get(2).evaluate();
+        double arg1 = children.get(0).evaluateDouble();
+        double arg2 = children.get(1).evaluateDouble();
+        if (symbol.equals(">=")){
+            return arg1 >= arg2;
+        } else if (symbol.equals("<=")){
+            return arg1 <= arg2;
+        } else if (symbol.equals("==")){
+            return arg1 == arg2;
+        } else {
+            return arg1 > arg2 && arg1 < children.get(2).evaluateDouble();
+        }
+    }
+
+    private double evaluateDouble() {
+        if (symbol == "+"){
+            return children.get(0).evaluateDouble() + children.get(1).evaluateDouble();
+        } else if (symbol == "-"){
+            return children.get(0).evaluateDouble() - children.get(1).evaluateDouble();
+        } else if (symbol == "*"){
+            return children.get(0).evaluateDouble() * children.get(1).evaluateDouble();
+        } else if (symbol == "/"){
+            double arg2 = children.get(1).evaluateDouble();
+            if (arg2 == 0)
+                return 0;
+            return children.get(0).evaluateDouble() / arg2;
+        } else if(!isNumeric(symbol)){
+            return PopulationController.getValueOf(symbol);
+        } else {
+            return Double.parseDouble(symbol);
+        }
     }
 
     public int getRandomSubTreeID() {
@@ -308,7 +305,7 @@ public class Chromosome {
         for (Chromosome child: children){
             stringOfChildren= stringOfChildren+" ("+child.toString()+")";
         }
-        return "{"+symbol+stringOfChildren+"}";
+        return "{"+nodeID+" "+symbol+stringOfChildren+"}";
     }
 
     @Override
@@ -391,5 +388,17 @@ public class Chromosome {
             }
         }
         return newTree;
+    }
+
+    private boolean isNumeric(String strNum) {
+        if (strNum == null) {
+            return false;
+        }
+        try {
+            double d = Double.parseDouble(strNum);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
     }
 }

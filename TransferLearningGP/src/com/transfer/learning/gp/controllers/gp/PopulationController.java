@@ -10,23 +10,34 @@ import java.util.stream.Collectors;
 
 public class PopulationController {
     //Function set
-    private static Map<String,Integer> mathematicalFunctionSet = new HashMap<>(){{
+
+    private static Map<String, Double> dataLine;
+    private static final Map<String, Integer> mathSet= new HashMap<>(){{
         put("+",2);
         put("-",2);
         put("/",2);
         put("*",2);
-        put("IF",3);
+        put("-5",0);
+        put("-4",0);
+        put("-3",0);
+        put("-2",0);
+        put("-1",0);
+        put("0",0);
+        put("1",0);
+        put("2",0);
+        put("3",0);
+        put("4",0);
+        put("5",0);
     }};
-    private static Map<String,Integer> logicFunctionSet = new HashMap<>(){{
+    private static final Map<String, Integer> booleanSet= new HashMap<>(){{
         put(">=",2);
         put("<=",2);
         put("==",2);
         put("<>",3);
     }};
-    //Terminal set
-    private static List<String> terminalSet = new LinkedList<>(Arrays.asList("rand"));
-
-    private static Map<String, Double> dataLine;
+    private static final Map<String, Integer> consequentSet= new HashMap<>(){{
+        put("IF",3);
+    }};
 
     private List<ChromosomeWrapper> chromosomes;
 
@@ -44,16 +55,14 @@ public class PopulationController {
     }
 
     public static boolean terminalSetContains(String symbol) {
-        return terminalSet.contains(symbol);
-    }
-
-    public static String validSymbol(String symbol) {
-        if (terminalSet.contains(symbol) ||
-            logicFunctionSet.containsKey(symbol) ||
-            mathematicalFunctionSet.containsKey(symbol))
-            return symbol;
-        else
-            return getRandomSymbolFromTerminalSet();
+        if (consequentSet.containsKey(symbol)){
+            return consequentSet.get(symbol) == 0;
+        } else if (booleanSet.containsKey(symbol)){
+            return booleanSet.get(symbol) ==0;
+        } else if (mathSet.containsKey(symbol)){
+            return mathSet.get(symbol) ==0;
+        }
+        return false;
     }
 
     public static List<Chromosome> getSubTrees(Chromosome bestChromosome) {
@@ -67,6 +76,67 @@ public class PopulationController {
             }
         }
         return output;
+    }
+
+    public static String getValidSymbol(String symbol) {
+        if (mathSet.containsKey(symbol) ||
+            booleanSet.containsKey(symbol) ||
+            consequentSet.containsKey(symbol))
+            return symbol;
+        else
+            return getRandomAttribute();
+    }
+
+    public static String getRandomAttribute() {
+        List<String> attributes = new ArrayList<>(consequentSet.keySet());
+        attributes.remove("IF");
+        return attributes.get(GPController.getRandom().nextInt(attributes.size()));
+    }
+
+    public static String getRandomSymbolFromMathematicalSet() {
+        List<String> mathSymbols = new ArrayList<>(mathSet.keySet());
+        return mathSymbols.get(GPController.getRandom().nextInt(mathSymbols.size()));
+    }
+
+    public static String getRandomSymbolFromBooleanSet() {
+        List<String> booleanSymbols = new ArrayList<>(booleanSet.keySet());
+        return booleanSymbols.get(GPController.getRandom().nextInt(booleanSymbols.size()));
+    }
+
+    public static String getRandomSymbolFromConsequentSet() {
+        List<String> consequences = new ArrayList<>(consequentSet.keySet());
+        return consequences.get(GPController.getRandom().nextInt(consequences.size()));
+    }
+
+    public static String getRandomSymbolFromBooleanFunctionSet() {
+        List<String> booleanSymbols = new ArrayList<>(booleanSet.keySet());
+        for (String key : booleanSet.keySet()) {
+            if (booleanSet.get(key) == 0)
+                booleanSymbols.remove(key);
+        }
+        return booleanSymbols.get(GPController.getRandom().nextInt(booleanSymbols.size()));
+    }
+
+    public static String getRandomSymbolFromMathematicalFunctionSet() {
+        List<String> mathSymbols = new ArrayList<>(mathSet.keySet());
+        for (String key : mathSet.keySet()) {
+            if (mathSet.get(key) == 0)
+                mathSymbols.remove(key);
+        }
+        return mathSymbols.get(GPController.getRandom().nextInt(mathSymbols.size()));
+    }
+
+    public static String getRandomSymbolFromMathematicalTerminalSet() {
+        List<String> mathSymbols = new ArrayList<>(mathSet.keySet());
+        for (String key : mathSet.keySet()) {
+            if (mathSet.get(key) > 0)
+                mathSymbols.remove(key);
+        }
+        return mathSymbols.get(GPController.getRandom().nextInt(mathSymbols.size()));
+    }
+
+    public static void addClassToConsequentSet(String className) {
+        consequentSet.put(className,0);
     }
 
     private boolean containsChromosome(Chromosome newChromosome) {
@@ -165,46 +235,24 @@ public class PopulationController {
         return outputs;
     }
 
-    public static String getRandomSymbolFromMathematicalFunctionSet() {
-        List<String> pKeys = new LinkedList<>(mathematicalFunctionSet.keySet());
-        return pKeys.get(GPController.getRandom().nextInt(mathematicalFunctionSet.size()-1));
-    }
-
-    public static String getRandomSymbolFromLogicFunctionSet() {
-        List<String> pKeys = new LinkedList<>(logicFunctionSet.keySet());
-        return pKeys.get(GPController.getRandom().nextInt(logicFunctionSet.size()-1));
-    }
-
-    public static String getRandomSymbolFromTerminalSet() {
-        String symbol =  terminalSet.get(GPController.getRandom().nextInt(terminalSet.size()-1));
-        if (symbol.equals("rand")) {
-            return Double.toString((GPController.getRandom().nextDouble() * 20)-10);
-        }
-        return symbol;
-    }
-
-    public static void addAttributeToFunctionSet(String attributeName){
-        terminalSet.add(attributeName);
+    public static void addAttributeToMathSet(String attributeName){
+        mathSet.put(attributeName,0);
     }
 
     public static List<Character> getChildrenTypes(String symbol){
-        if (mathematicalFunctionSet.keySet().contains(symbol)) {
-            if (mathematicalFunctionSet.get(symbol) == 2){
-                return new ArrayList<>(Arrays.asList('d','d'));
-            }else{
-                return new ArrayList<>(Arrays.asList('b','d','d'));
-            }
+        if (symbol.equals("IF")){
+            return new ArrayList<>(Arrays.asList('b','c','c'));
         }
-        else if (logicFunctionSet.keySet().contains(symbol)) {
-            if (logicFunctionSet.get(symbol) == 2){
+        if (mathSet.containsKey(symbol) && mathSet.get(symbol) > 0){
+            return new ArrayList<>(Arrays.asList('d','d'));
+        }
+        if (booleanSet.containsKey(symbol)){
+            if (booleanSet.get(symbol) == 2)
                 return new ArrayList<>(Arrays.asList('d','d'));
-            }else{
+            else if (booleanSet.get(symbol) == 3)
                 return new ArrayList<>(Arrays.asList('d','d','d'));
-            }
         }
-        else
-            return null;
-
+        return new ArrayList<>();
     }
 
     public static List<Chromosome> getCommonSubTree(Chromosome chromosomeOfPopulation1, Chromosome chromosomeOfPopulation2){

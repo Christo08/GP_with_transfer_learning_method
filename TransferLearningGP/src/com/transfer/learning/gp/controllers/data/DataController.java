@@ -24,14 +24,6 @@ public abstract class DataController {
         return uniqueAnswers;
     }
 
-    public List<Map<String, Double>> getBatchOfData(int counter){
-        int startOfBatch = counter * sizeOfBatchForDataset;
-        int stopOfBatch =  counter * sizeOfBatchForDataset + sizeOfBatchForDataset - 1;
-        if (stopOfBatch > dataSet.size())
-            stopOfBatch = dataSet.size();
-        return dataSet.subList(startOfBatch, stopOfBatch);
-    }
-
     public abstract void chanceMod();
 
     protected void printProgress(double current, double total, String dataSetName) {

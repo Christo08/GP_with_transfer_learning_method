@@ -40,13 +40,14 @@ public class SourceTaskDataController extends DataController {
                     if (counter == splitLine.size()-1)
                     {
                         dataLine.put("ans", number);
+                        PopulationController.addClassToConsequentSet(String.valueOf(number));
                     }
                     else
                     {
-                        String attributeName = String.valueOf((char)(65+counter));
+                        String attributeName = String.valueOf((char) (65 + counter));
                         if (numberOfLines ==1)
                         {
-                            PopulationController.addAttributeToFunctionSet(attributeName);
+                            PopulationController.addAttributeToMathSet(attributeName);
                         }
                         dataLine.put(attributeName, number);
                     }
@@ -79,13 +80,14 @@ public class SourceTaskDataController extends DataController {
                     if (counter == splitLine.size()-1)
                     {
                         dataLine.put("ans", number);
+                        PopulationController.addClassToConsequentSet(String.valueOf(number));
                     }
                     else
                     {
-                        String attributeName = String.valueOf((char)(65+counter));
+                        String attributeName = String.valueOf((char) (65 + counter));
                         if (numberOfLines ==1)
                         {
-                            PopulationController.addAttributeToFunctionSet(attributeName);
+                            PopulationController.addAttributeToMathSet(attributeName);
                         }
                         dataLine.put(attributeName, number);
                     }

@@ -10,18 +10,9 @@ public abstract class DataController {
     private NumberFormat formatter = new DecimalFormat("#0.00");
     protected List<Map<String, Double>> dataSet;
     protected String dataSetName;
-    protected int sizeOfBatchForDataset;
 
     public List<Map<String, Double>> getDataSet() {
         return dataSet;
-    }
-
-    public List<String> getUniqueAnswers() {
-        List<String> uniqueAnswers = new ArrayList<>(ConfigController.getNumberOfUniqueAnswersForDataset().get(dataSetName));
-        for (int counter =0; counter < ConfigController.getNumberOfUniqueAnswersForDataset().get(dataSetName); counter++){
-            uniqueAnswers.add(counter, Double.toString(counter+1));
-        }
-        return uniqueAnswers;
     }
 
     public abstract void chanceMod();

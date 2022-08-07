@@ -4,14 +4,16 @@ package com.transfer.learning.gp.controllers.gp;
 import com.transfer.learning.gp.controllers.ConfigController;
 import com.transfer.learning.gp.data.objects.Chromosome;
 import com.transfer.learning.gp.data.objects.ChromosomeWrapper;
+import com.transfer.learning.gp.data.objects.Function;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class PopulationController {
-    //Function set
-
+    //Data
     private static Map<String, Double> dataLine;
+
+    //Function and terminal sets
     private static final Map<String, Integer> mathSet= new HashMap<>(){{
         put("+",2);
         put("-",2);
@@ -34,15 +36,65 @@ public class PopulationController {
         put("<=",2);
         put("==",2);
         put("<>",3);
+        put("true",0);
+        put("false",0);
     }};
     private static final Map<String, Integer> consequentSet= new HashMap<>(){{
         put("IF",3);
     }};
 
+    //Populations
     private List<ChromosomeWrapper> chromosomes;
+    private List<Chromosome> alienChromosomes = new ArrayList<>();
+
+    //Functions
+    private static Map<String, Function> functions;
+    private static boolean hasFunctions =false;
 
     public PopulationController() {
         this.chromosomes = new ArrayList<>();
+    }
+
+    public static double evaluateConsequentFunction(String symbol, LinkedList<Chromosome> children) {
+        Queue<Boolean> booleanInputs = new LinkedList<>();
+        Queue<Double> doubleInputs = new LinkedList<>();
+        Queue<Double> consequentInputs = new LinkedList<>();
+        for (Chromosome child : children) {
+            if (child.getType() =='c')
+                consequentInputs.add(child.evaluateConsequent());
+            else if (child.getType() =='b')
+                booleanInputs.add(child.evaluateBoolean());
+            else if (child.getType() =='d')
+                doubleInputs.add(child.evaluateDouble());
+        }
+        return functions.get(symbol).evaluateConsequent(consequentInputs, booleanInputs, doubleInputs);
+    }
+
+    public static boolean evaluateBooleanFunction(String symbol, LinkedList<Chromosome> children) {
+        Queue<Boolean> booleanInputs = new LinkedList<>();
+        Queue<Double> doubleInputs = new LinkedList<>();
+        for (Chromosome child : children) {
+            if (child.getType() =='b')
+                booleanInputs.add(child.evaluateBoolean());
+            else if (child.getType() =='d')
+                doubleInputs.add(child.evaluateDouble());
+        }
+        return functions.get(symbol).evaluateBoolean(booleanInputs, doubleInputs);
+    }
+
+    public static double evaluateMathFunction(String symbol, LinkedList<Chromosome> children) {
+        Queue<Double> doubleInputs = new LinkedList<>();
+        for (Chromosome child : children) {
+            doubleInputs.add(child.evaluateDouble());
+        }
+        return functions.get(symbol).evaluateDouble(doubleInputs);
+    }
+
+    public static boolean isFunction(String symbol) {
+        return hasFunctions && functions.containsKey(symbol);
+    }
+
+    public void initPopulation(){
         for (int counter =0;  counter < ConfigController.getPopulationSize(); counter++)
         {
             Chromosome newChromosome;
@@ -65,74 +117,83 @@ public class PopulationController {
         return false;
     }
 
-    public static List<Chromosome> getSubTrees(Chromosome bestChromosome) {
-        List<Chromosome> nodesOfChromosomes = bestChromosome.getNodes();
-        List<Chromosome> output = new ArrayList<>();
-        for (Chromosome nodesOfChromosome : nodesOfChromosomes) {
-            for (int counter =1; counter <= ConfigController.getDepthOfPSTTree(); counter++){
-                Chromosome newSubTree = nodesOfChromosome.getSubTreeOfDepth(counter);
-                if (output.stream().anyMatch(subTree -> subTree.toString().equals(newSubTree.toString())))
-                    output.add(newSubTree);
+    public static String getValidSymbol(String symbol, Character type) {
+        if (type == 'c'){
+            if (consequentSet.containsKey(symbol))
+                return symbol;
+            else
+                return getRandomConsequentTerminal();
+        }else if (type == 'b'){
+            if (booleanSet.containsKey(symbol))
+                return symbol;
+            else
+                return getRandomBooleanTerminal();
+        }else{
+            if (mathSet.containsKey(symbol))
+                return symbol;
+            else
+                return getRandomMathTerminal();
+        }
+    }
+
+    public static String getRandomMathTerminal(){
+        List<String> mathTerminal = new ArrayList<>();
+        for (Map.Entry<String, Integer> pair : mathSet.entrySet()) {
+            if (pair.getValue() ==0){
+                mathTerminal.add(pair.getKey());
             }
         }
-        return output;
+        return mathTerminal.get(GPController.getRandom().nextInt(mathTerminal.size()));
     }
 
-    public static String getValidSymbol(String symbol) {
-        if (mathSet.containsKey(symbol) ||
-            booleanSet.containsKey(symbol) ||
-            consequentSet.containsKey(symbol))
-            return symbol;
-        else
-            return getRandomAttribute();
-    }
-
-    public static String getRandomAttribute() {
-        List<String> attributes = new ArrayList<>(consequentSet.keySet());
-        attributes.remove("IF");
-        return attributes.get(GPController.getRandom().nextInt(attributes.size()));
-    }
-
-    public static String getRandomSymbolFromMathematicalSet() {
-        List<String> mathSymbols = new ArrayList<>(mathSet.keySet());
-        return mathSymbols.get(GPController.getRandom().nextInt(mathSymbols.size()));
-    }
-
-    public static String getRandomSymbolFromBooleanSet() {
-        List<String> booleanSymbols = new ArrayList<>(booleanSet.keySet());
-        return booleanSymbols.get(GPController.getRandom().nextInt(booleanSymbols.size()));
-    }
-
-    public static String getRandomSymbolFromConsequentSet() {
-        List<String> consequences = new ArrayList<>(consequentSet.keySet());
-        return consequences.get(GPController.getRandom().nextInt(consequences.size()));
-    }
-
-    public static String getRandomSymbolFromBooleanFunctionSet() {
-        List<String> booleanSymbols = new ArrayList<>(booleanSet.keySet());
-        for (String key : booleanSet.keySet()) {
-            if (booleanSet.get(key) == 0)
-                booleanSymbols.remove(key);
+    public static String getRandomMathFunction(){
+        List<String> mathFunction = new ArrayList<>();
+        for (Map.Entry<String, Integer> pair : mathSet.entrySet()) {
+            if (pair.getValue() != 0){
+                mathFunction.add(pair.getKey());
+            }
         }
-        return booleanSymbols.get(GPController.getRandom().nextInt(booleanSymbols.size()));
+        return mathFunction.get(GPController.getRandom().nextInt(mathFunction.size()));
     }
 
-    public static String getRandomSymbolFromMathematicalFunctionSet() {
-        List<String> mathSymbols = new ArrayList<>(mathSet.keySet());
-        for (String key : mathSet.keySet()) {
-            if (mathSet.get(key) == 0)
-                mathSymbols.remove(key);
+    public static String getRandomConsequentTerminal(){
+        List<String> booleanTerminal = new ArrayList<>();
+        for (Map.Entry<String, Integer> pair : consequentSet.entrySet()) {
+            if (pair.getValue() ==0){
+                booleanTerminal.add(pair.getKey());
+            }
         }
-        return mathSymbols.get(GPController.getRandom().nextInt(mathSymbols.size()));
+        return booleanTerminal.get(GPController.getRandom().nextInt(booleanTerminal.size()));
     }
 
-    public static String getRandomSymbolFromMathematicalTerminalSet() {
-        List<String> mathSymbols = new ArrayList<>(mathSet.keySet());
-        for (String key : mathSet.keySet()) {
-            if (mathSet.get(key) > 0)
-                mathSymbols.remove(key);
+    public static String getRandomConsequentFunction(){
+        List<String> booleanFunction = new ArrayList<>();
+        for (Map.Entry<String, Integer> pair : consequentSet.entrySet()) {
+            if (pair.getValue() != 0){
+                booleanFunction.add(pair.getKey());
+            }
         }
-        return mathSymbols.get(GPController.getRandom().nextInt(mathSymbols.size()));
+        return booleanFunction.get(GPController.getRandom().nextInt(booleanFunction.size()));
+    }
+
+    public static String getRandomBooleanTerminal(){
+        List<String> booleanTerminal = new ArrayList<>();
+        for (Map.Entry<String, Integer> pair : booleanSet.entrySet()) {
+            if (pair.getValue() ==0){
+                booleanTerminal.add(pair.getKey());
+            }
+        }
+        return booleanTerminal.get(GPController.getRandom().nextInt(booleanTerminal.size()));
+    }
+
+    public static String getRandomBooleanFunction(){
+        List<String> booleanFunction = new ArrayList<>();
+        for (Map.Entry<String, Integer> pair : booleanSet.entrySet()) {
+            if (pair.getValue() != 0){
+                booleanFunction.add(pair.getKey());
+            }
+        }
+        return booleanFunction.get(GPController.getRandom().nextInt(booleanFunction.size()));
     }
 
     public static void addClassToConsequentSet(String className) {
@@ -169,7 +230,7 @@ public class PopulationController {
 
     public double evaluateChromosomes(Map<String, Double> dataLine, int chromosomesIndex) {
         this.dataLine = dataLine;
-        return chromosomes.get(chromosomesIndex).chromosome.evaluate();
+        return chromosomes.get(chromosomesIndex).chromosome.evaluateConsequent();
     }
 
     public Chromosome mutationChromosomes(int chromosomesIndex) {
@@ -240,6 +301,9 @@ public class PopulationController {
     }
 
     public static List<Character> getChildrenTypes(String symbol){
+        if (hasFunctions && functions.containsKey(symbol)){
+            return functions.get(symbol).getParameterTypes();
+        }
         if (symbol.equals("IF")){
             return new ArrayList<>(Arrays.asList('b','c','c'));
         }
@@ -252,6 +316,7 @@ public class PopulationController {
             else if (booleanSet.get(symbol) == 3)
                 return new ArrayList<>(Arrays.asList('d','d','d'));
         }
+
         return new ArrayList<>();
     }
 
@@ -299,12 +364,6 @@ public class PopulationController {
         }
     }
 
-    public void sortedPopulation() {
-        chromosomes = chromosomes.stream()
-                                 .sorted((chromosomeWrapper1, chromosomeWrapper2) -> Double.compare(chromosomeWrapper2.fitness, chromosomeWrapper1.fitness))
-                                 .collect(Collectors.toList());
-    }
-
     public List<ChromosomeWrapper> getTopChromosomes(int numberOfChromosomes) {
         List<ChromosomeWrapper> output = new LinkedList<>();
         for (int counter =0; counter < numberOfChromosomes; counter++){
@@ -326,7 +385,7 @@ public class PopulationController {
         }
     }
 
-    public void clearPopulation() {
+    public void recreatePopulation() {
         chromosomes.clear();
 
         for (int counter =0;  counter < ConfigController.getPopulationSize(); counter++)
@@ -338,5 +397,89 @@ public class PopulationController {
             ChromosomeWrapper newChromosomeWrapper = new ChromosomeWrapper(newChromosome);
             chromosomes.add(newChromosomeWrapper);
         }
+    }
+
+    public void addAliens(List<Chromosome> alienChromosomes) {
+        this.alienChromosomes.addAll(alienChromosomes);
+    }
+
+    public Chromosome crossbreedingChromosomes(int index) {
+        Chromosome newChromosomes = new Chromosome(chromosomes.get(index).chromosome);
+        int subTreeIDOfChromosomesOne = newChromosomes.getRandomSubTreeID();
+        char subTreeTypeOfChromosomesOne  = newChromosomes.getTypeOfNode(subTreeIDOfChromosomesOne);
+
+        int chromosomeTwosIndex =  GPController.getRandom().nextInt(alienChromosomes.size());
+        Chromosome newChromosomesTwo = new Chromosome(alienChromosomes.get(chromosomeTwosIndex));
+        int subTreeIDOfChromosomesTwo = newChromosomesTwo.getRandomSubTreeID();
+        char subTreeTypeOfChromosomesTwo = newChromosomesTwo.getTypeOfNode(subTreeIDOfChromosomesTwo);
+
+        int counter =0;
+
+        while (subTreeTypeOfChromosomesTwo != subTreeTypeOfChromosomesOne) {
+            if (counter % 2 == 0){
+                subTreeIDOfChromosomesTwo = newChromosomesTwo.getRandomSubTreeID();
+                subTreeTypeOfChromosomesTwo = newChromosomesTwo.getTypeOfNode(subTreeIDOfChromosomesTwo);
+            }else{
+                subTreeIDOfChromosomesOne = newChromosomes.getRandomSubTreeID();
+                subTreeTypeOfChromosomesOne = newChromosomes.getTypeOfNode(subTreeIDOfChromosomesOne);
+            }
+            counter++;
+        }
+
+        Chromosome subTreeTwo = newChromosomesTwo.getSubTree(subTreeIDOfChromosomesTwo);
+
+        if (subTreeIDOfChromosomesOne == 1){
+            newChromosomes = subTreeTwo;
+        }else{
+            newChromosomes.replaceSubTree(subTreeIDOfChromosomesOne, subTreeTwo);
+        }
+
+        newChromosomes.renumberTheNodes(true);
+
+        return newChromosomes;
+    }
+
+    public void addFunctions(List<Function> functions) {
+        functions.stream()
+                .filter(function -> function.getReturnType() == 'd')
+                .forEach(function -> mathSet.put(function.getName(),function.getNumberOfParameters()));
+        functions.stream()
+                .filter(function -> function.getReturnType() == 'b')
+                .forEach(function -> booleanSet.put(function.getName(),function.getNumberOfParameters()));
+        functions.stream()
+                .filter(function -> function.getReturnType() == 'c')
+                .forEach(function -> consequentSet.put(function.getName(),function.getNumberOfParameters()));
+        this.functions =functions.stream().collect(Collectors.toMap(Function::getName, Function::getSelf));
+        hasFunctions = true;
+    }
+
+    public void resetSets() {
+        List<String> mathKeys = new ArrayList<>(mathSet.keySet());
+        mathKeys.stream()
+                .filter(key -> (!isNumeric(key) && mathSet.get(key) == 0) || (hasFunctions && functions.containsKey(key)))
+                .forEach(key -> mathSet.remove(key));
+
+        List<String> consequentKeys = new ArrayList<>(consequentSet.keySet());
+        consequentKeys.stream()
+                      .filter(key -> (consequentSet.get(key) == 0) || (hasFunctions && functions.containsKey(key)))
+                      .forEach(key -> consequentSet.remove(key));
+
+        List<String> booleanKeys = new ArrayList<>(booleanSet.keySet());
+        booleanKeys.stream()
+                   .filter(key -> hasFunctions && functions.containsKey(key))
+                   .forEach(key -> booleanSet.remove(key));
+        hasFunctions = false;
+    }
+
+    private boolean isNumeric(String strNum) {
+        if (strNum == null) {
+            return false;
+        }
+        try {
+            double d = Double.parseDouble(strNum);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
     }
 }

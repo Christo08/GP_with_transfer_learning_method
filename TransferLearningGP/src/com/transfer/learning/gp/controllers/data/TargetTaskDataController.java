@@ -10,11 +10,9 @@ import java.util.*;
 public class TargetTaskDataController extends DataController {
 
     private List<Map<String, Double>> trainingDataSet;
-    private int trainingSizeOfBatchForDataset;
     protected String dataSetTrainingName;
 
     private List<Map<String, Double>> testingDataSet;
-    private int testingSizeOfBatchForDataset;
     protected String dataSetTestingName;
 
     public TargetTaskDataController(String pathToData, String dataSetName) throws FileNotFoundException {
@@ -26,7 +24,6 @@ public class TargetTaskDataController extends DataController {
         double numberOfLines =0;
         dataSetTrainingName = dataSetName+"_tr";
         double counterOfLines = ConfigController.getSizeOfDataset().get(dataSetTrainingName);
-        trainingSizeOfBatchForDataset = (int) Math.round(counterOfLines/(ConfigController.getNumberOfBatch()));
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
             if (!line.isEmpty()){
@@ -67,7 +64,6 @@ public class TargetTaskDataController extends DataController {
         testingDataSet = new LinkedList<>();
         numberOfLines =0;
         counterOfLines = ConfigController.getSizeOfDataset().get(dataSetTestingName);
-        testingSizeOfBatchForDataset = (int) Math.round(counterOfLines/(ConfigController.getNumberOfBatch()));
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
             if (!line.isEmpty()){
@@ -101,7 +97,6 @@ public class TargetTaskDataController extends DataController {
         System.out.println();
 
         dataSet = trainingDataSet;
-        sizeOfBatchForDataset = trainingSizeOfBatchForDataset;
         this.dataSetName=dataSetTrainingName;
     }
 
@@ -109,11 +104,9 @@ public class TargetTaskDataController extends DataController {
     public void chanceMod() {
         if (dataSetTrainingName.equals(dataSetName)){
             dataSet = testingDataSet;
-            sizeOfBatchForDataset = testingSizeOfBatchForDataset;
             this.dataSetName=dataSetTestingName;
         }else{
             dataSet = trainingDataSet;
-            sizeOfBatchForDataset = trainingSizeOfBatchForDataset;
             this.dataSetName=dataSetTrainingName;
         }
     }

@@ -20,34 +20,39 @@ public class Main {
             int mod;
             do {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-                System.out.println("Please enter 1 to train the gp and export the data, 2 to train the gp with transfer learning, 3 without transfer learning or 0 to exit");
+                System.out.println("Do you want to set the seed? 1 yes and 2 no");
+                long seed;
+                if (Integer.parseInt(reader.readLine()) == 1){
+                    System.out.println("Please enter the seed:");
+                    seed =Long.parseLong(reader.readLine());
+                }else{
+                    seed = GPController.getRandom().nextLong();
+                }
+                System.out.println("Seed: "+seed);
+                System.out.println("Please enter 1 to train the gp with transfer learning, 2 without transfer learning or 0 to exit");
                 mod = Integer.parseInt(reader.readLine());
 
                 String datasetNames = "";
-                String datasetName = "WineQualityWhite";
-                if (mod != 1){
-                    int counter = 1;
-                    List<String> keys = new ArrayList<>(ConfigController.getPathToTestingDataset().keySet());
-                    keys = keys.stream()
-                            .sorted(Comparator.naturalOrder())
-                            .collect(Collectors.toList());
-                    for (String key:keys) {
-                        datasetNames += counter+" "+key+"\n";
-                        counter++;
-                    }
-                    System.out.println("Please enter a number to select a dataset:");
-                    System.out.print(datasetNames);
-                    datasetName = keys.get(Integer.parseInt(reader.readLine())-1);
+                String datasetName;
+                int counter = 1;
+                List<String> keys = new ArrayList<>(ConfigController.getPathToTestingDataset().keySet());
+                keys = keys.stream()
+                        .sorted(Comparator.naturalOrder())
+                        .collect(Collectors.toList());
+                for (String key:keys) {
+                    datasetNames += counter+" "+key+"\n";
+                    counter++;
                 }
+                System.out.println("Please enter a number to select a dataset:");
+                System.out.print(datasetNames);
+                datasetName = keys.get(Integer.parseInt(reader.readLine())-1);
 
 
-                GPController gpController = new GPController(args[0], datasetName, mod);
+                GPController gpController = new GPController(args[0], seed);
                 if (mod == 1){
-                    gpController.exportData();
-                }else if (mod == 2){
-                    gpController.importData();
-                }else{
-                    gpController.experiment();
+                    gpController.trainWithTransferLearning(datasetName);
+                }else {
+                    gpController.trainWithoutTransferLearning(datasetName);
                 }
             }while (mod ==0);
         } catch (FileNotFoundException e) {

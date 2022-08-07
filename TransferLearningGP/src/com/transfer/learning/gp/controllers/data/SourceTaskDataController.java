@@ -11,11 +11,9 @@ public class SourceTaskDataController extends DataController {
 
     private List<Map<String, Double>> dataSet1;
     private String dataSet1Name;
-    private int sizeOfBatchForDataset1;
 
     private List<Map<String, Double>> dataSet2;
     private String dataSet2Name;
-    private int sizeOfBatchForDataset2;
 
     public SourceTaskDataController(String pathToData) throws FileNotFoundException {
         super();
@@ -26,7 +24,6 @@ public class SourceTaskDataController extends DataController {
         double numberOfLines =0;
         dataSet1Name = pathToFile.substring(pathToFile.lastIndexOf("\\")+1, pathToFile.lastIndexOf("."));
         double counterOfLines = ConfigController.getSizeOfDataset().get(dataSet1Name);
-        sizeOfBatchForDataset1 = (int) Math.round(counterOfLines/(ConfigController.getNumberOfBatch()));
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
             if (!line.isEmpty()){
@@ -66,7 +63,6 @@ public class SourceTaskDataController extends DataController {
         numberOfLines =0;
         dataSet2Name = pathToFile.substring(pathToFile.lastIndexOf("\\")+1, pathToFile.lastIndexOf("."));
         counterOfLines = ConfigController.getSizeOfDataset().get(dataSet2Name);
-        sizeOfBatchForDataset2 = (int) Math.round(counterOfLines/(ConfigController.getNumberOfBatch()));
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
             if (!line.isEmpty()){
@@ -107,11 +103,9 @@ public class SourceTaskDataController extends DataController {
         if (dataSetName.equals(dataSet1Name)){
             dataSetName = dataSet2Name;
             dataSet = dataSet2;
-            sizeOfBatchForDataset = sizeOfBatchForDataset2;
         }else{
             dataSetName = dataSet1Name;
             dataSet = dataSet1;
-            sizeOfBatchForDataset = sizeOfBatchForDataset1;
         }
     }
 }

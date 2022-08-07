@@ -2,7 +2,10 @@ package com.transfer.learning.gp.data.objects.xml;
 
 import com.transfer.learning.gp.controllers.ConfigController;
 
-import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -10,59 +13,39 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 
 public class Experiment {
-    private int crossoverSize;
+
     private String dataSetName;
     private int maxDepthOfStartingChromosomes;
-    private double minAccuracy;
-    private int mutationSize;
-    private int numberOfGenerationsBeforeEvolveMap;
-    private int numberOfSlots;
-    private int numberOfRuns;
-    private int populationSize;
-    private long seed;
-    private double startBondOfSlots;
-    private double stopBondOfSlots;
-    private int tournamentSize;
-    private int transferLearningMethod;
-    private int reproductionSize;
-    private List<Run> runs;
+
     private double padding;
-    private double percentOfChromosomeToSaveInFullTreMethod;
+    private double minAccuracy;
+    private int numberOfRuns;
+
+    private int populationSize;
+    private int tournamentSize;
+    private TransferLearningMethod transferLearningMethod;
+
+    private List<Run> runs;
+    private List<GeneticOperatorsConfig> geneticOperatorsConfigs;
 
     public Experiment() {
     }
 
-    public Experiment(String dataSetName, long seed) {
+    public Experiment(String dataSetName) {
         this.dataSetName = dataSetName;
-        this.seed = seed;
 
-        crossoverSize = ConfigController.getPercentOfCrossover();
         maxDepthOfStartingChromosomes = ConfigController.getMaxDepth();
         minAccuracy = ConfigController.getMinAccuracy();
-        mutationSize = ConfigController.getPercentOfMutation();
-        numberOfGenerationsBeforeEvolveMap = ConfigController.getNumberOfGenerationsBeforeEvolveMap();
-        numberOfSlots = ConfigController.getNumberOfSlots();
         populationSize = ConfigController.getPopulationSize();
-        startBondOfSlots = ConfigController.getStartBondOfSlots();
-        stopBondOfSlots = ConfigController.getStopBondOfSlots();
         tournamentSize = ConfigController.getTournamentSize();
-        reproductionSize = ConfigController.getPercentOfReproduction();
         numberOfRuns = ConfigController.getNumberOfRuns();
         padding = ConfigController.getPadding();
-        percentOfChromosomeToSaveInFullTreMethod = ConfigController.getPercentOfChromosomeToSaveInFullTreeMethod();
 
-        runs = new LinkedList<>();
+        runs = new ArrayList<>();
+        geneticOperatorsConfigs = new ArrayList<>();
+
+        geneticOperatorsConfigs.add(new GeneticOperatorsConfig(1));
     }
-
-
-    public int getCrossoverSize() {
-        return crossoverSize;
-    }
-
-    public void setCrossoverSize(int crossoverSize) {
-        this.crossoverSize = crossoverSize;
-    }
-
 
     public String getDataSetName() {
         return dataSetName;
@@ -72,7 +55,6 @@ public class Experiment {
         this.dataSetName = dataSetName;
     }
 
-
     public int getMaxDepthOfStartingChromosomes() {
         return maxDepthOfStartingChromosomes;
     }
@@ -80,7 +62,6 @@ public class Experiment {
     public void setMaxDepthOfStartingChromosomes(int maxDepthOfStartingChromosomes) {
         this.maxDepthOfStartingChromosomes = maxDepthOfStartingChromosomes;
     }
-
 
     public double getMinAccuracy() {
         return minAccuracy;
@@ -90,34 +71,6 @@ public class Experiment {
         this.minAccuracy = minAccuracy;
     }
 
-
-    public int getMutationSize() {
-        return mutationSize;
-    }
-
-    public void setMutationSize(int mutationSize) {
-        this.mutationSize = mutationSize;
-    }
-
-
-    public int getNumberOfGenerationsBeforeEvolveMap() {
-        return numberOfGenerationsBeforeEvolveMap;
-    }
-
-    public void setNumberOfGenerationsBeforeEvolveMap(int numberOfGenerationsBeforeEvolveMap) {
-        this.numberOfGenerationsBeforeEvolveMap = numberOfGenerationsBeforeEvolveMap;
-    }
-
-
-    public int getNumberOfSlots() {
-        return numberOfSlots;
-    }
-
-    public void setNumberOfSlots(int numberOfSlots) {
-        this.numberOfSlots = numberOfSlots;
-    }
-
-
     public int getNumberOfRuns() {
         return numberOfRuns;
     }
@@ -125,7 +78,6 @@ public class Experiment {
     public void setNumberOfRuns(int numberOfRuns) {
         this.numberOfRuns = numberOfRuns;
     }
-
 
     public int getPopulationSize() {
         return populationSize;
@@ -135,49 +87,12 @@ public class Experiment {
         this.populationSize = populationSize;
     }
 
-
-    public long getSeed() {
-        return seed;
-    }
-
-    public void setSeed(long seed) {
-        this.seed = seed;
-    }
-
-
-    public double getStartBondOfSlots() {
-        return startBondOfSlots;
-    }
-
-    public void setStartBondOfSlots(double startBondOfSlots) {
-        this.startBondOfSlots = startBondOfSlots;
-    }
-
-
-    public double getStopBondOfSlots() {
-        return stopBondOfSlots;
-    }
-
-    public void setStopBondOfSlots(double stopBondOfSlots) {
-        this.stopBondOfSlots = stopBondOfSlots;
-    }
-
-
     public int getTournamentSize() {
         return tournamentSize;
     }
 
     public void setTournamentSize(int tournamentSize) {
         this.tournamentSize = tournamentSize;
-    }
-
-
-    public int getReproductionSize() {
-        return reproductionSize;
-    }
-
-    public void setReproductionSize(int reproductionSize) {
-        this.reproductionSize = reproductionSize;
     }
 
     public List<Run> getRuns() {
@@ -192,14 +107,6 @@ public class Experiment {
         this.runs.add(run);
     }
 
-    public void setTransferLearningMethod(int transferLearningMethod) {
-        this.transferLearningMethod = transferLearningMethod;
-    }
-
-    public int getTransferLearningMethod() {
-        return transferLearningMethod;
-    }
-
     public double getPadding() {
         return padding;
     }
@@ -208,11 +115,23 @@ public class Experiment {
         this.padding = padding;
     }
 
-    public double getPercentOfChromosomeToSaveInFullTreMethod() {
-        return percentOfChromosomeToSaveInFullTreMethod;
+    public TransferLearningMethod getTransferLearningMethod() {
+        return transferLearningMethod;
     }
 
-    public void setPercentOfChromosomeToSaveInFullTreMethod(double percentOfChromosomeToSaveInFullTreMethod) {
-        this.percentOfChromosomeToSaveInFullTreMethod = percentOfChromosomeToSaveInFullTreMethod;
+    public void setTransferLearningMethod(TransferLearningMethod transferLearningMethod) {
+        this.transferLearningMethod = transferLearningMethod;
+    }
+
+    public List<GeneticOperatorsConfig> getGeneticOperatorsConfigs() {
+        return geneticOperatorsConfigs;
+    }
+
+    public void setGeneticOperatorsConfigs(List<GeneticOperatorsConfig> geneticOperatorsConfigs) {
+        this.geneticOperatorsConfigs = geneticOperatorsConfigs;
+    }
+
+    public void addGeneticOperatorsConfig(GeneticOperatorsConfig geneticOperatorsConfig) {
+        this.geneticOperatorsConfigs.add(geneticOperatorsConfig);
     }
 }

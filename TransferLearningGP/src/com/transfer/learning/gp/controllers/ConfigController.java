@@ -4,35 +4,52 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ConfigController {
+    //Experiment config
+    //Max depth of newly created trees
     private final static int maxDepth =5;
-    private final static int populationSize = 100;
-    private final static int numberOfSlots = 40;
-    private final static double startBondOfSlots = -20;
-    private final static double stopBondOfSlots = 20;
-    private final static Map<String, Integer> numberOfUniqueAnswersForDataset =new HashMap<>(){{
-        put("Avila_tr",12);
-        put("Avila_ts",12);
-        put("DryBeam_tr",7);
-        put("DryBeam_ts",7);
-        put("Iris_tr",3);
-        put("Iris_ts",3);
-        put("Seeds_tr",3);
-        put("Seeds_ts",3);
-        put("wineQualityRed",10);
-        put("wineQualityWhite",10);
-    }};
+    //Size of the population
+    private final static int populationSize = 200;
+    //Min accuracy of final classifier before GP stops
+    private final static double minAccuracy = 95;
+    //Number of times the accuracy can be in a bond
+    private final static int numberOfSameBeforeEnding = 25;
+    //The bonds. See numberOfSameBeforeEnding
+    private final static double padding = 1;
+    //Number of runs in an experiment
+    private final static int numberOfRuns = 20;
+    //Size of tournament select
+    private final static int tournamentSize = 8;
+    //Percent of genetic operators used
+    private final static double percentOfReproductionOne = 0.1;
+    private final static double percentOfCrossoverOne = 0.3;
+    private final static double percentOfMutationOne = 0.6;
+    private final static double percentOfReproductionTwo = 0.1;
+    private final static double percentOfCrossoverTwo = 0.25;
+    private final static double percentOfMutationTwo = 0.25;
+    private final static double percentOfCrossbreeding=0.4;
+    //Crossover can only be applied before this depth.
+    private final static int maxDepthOfCrossover = 100;
+    //Transfer learning method config
+    //Percent of the population which is saved
+    private final static double percentOfChromosomeToSaveInFullTreeMethod = 0.5;
+    private final static double percentOfChromosomeToSaveInSubTreeMethod = 0.5;
+    private final static double percentOfChromosomeToSaveInGenMethod = 0.5;
+    private final static double percentOfChromosomeToSaveInGPCRMethod = 0.5;
+    //Other config
+    //Size of data set
     private final static Map<String, Integer> sizeOfDataset =new HashMap<>(){{
-        put("Avila_tr",15649);
-        put("Avila_ts",5217);
-        put("DryBeam_tr",10208);
-        put("DryBeam_ts",3103);
-        put("Iris_tr",112);
-        put("Iris_ts",38);
-        put("Seeds_tr",157);
-        put("Seeds_ts",53);
+        put("Avila_ts",15649);
+        put("Avila_tr",5217);
+        put("DryBeam_ts",10208);
+        put("DryBeam_tr",3103);
+        put("Iris_ts",112);
+        put("Iris_tr",38);
+        put("Seeds_ts",157);
+        put("Seeds_tr",53);
         put("wineQualityRed",1599);
         put("wineQualityWhite",4898);
     }};
+    //Paths to data sets
     private final static Map<String, String> pathToTrainingDataset = new HashMap<>(){{
         put("Avila","\\Avila\\avila_tr.txt");
         put("DryBeam","\\DryBeanDataset\\dryBeam_tr.txt");
@@ -47,22 +64,7 @@ public class ConfigController {
         put("Iris","\\Iris\\iris_ts.txt");
         put("Seeds","\\Seeds\\seeds_ts.txt");
     }};
-    private final static double minAccuracy = 95;
-    private final static int tournamentSize = 4;
-    private final static double percentOfReproduction = 0.2;
-    private final static double percentOfCrossover = 0.5;
-    private final static double percentOfMutation = 0.3;
-    private final static int numberOfGenerationsBeforeEvolveMap = 25;
-    private final static int numberOfBatch = 4;
-    private final static int numberOfRuns = 20;
-    private final static int maxDepthOfCrossover = 50;
-    private final static int numberOfSameBeforeEnding = 25;
-    private final static double padding = 0.05;
-    private final static double percentOfChromosomeToSaveInFullTreeMethod = 0.5;
-    private final static double percentOfChromosomeToSaveInSubTreeMethod = 0.5;
-    private final static double percentOfChromosomeToSaveInGenMethod = 0.5;
-    private final static double percentOfChromosomeToSaveInGPCRMethod = 0.5;
-    private final static double percentOfChromosomeToSaveInPSTMethod = 0.5;
+
     private final static int depthOfPSTTree = 5;
 
     public static int getMaxDepth() {
@@ -71,22 +73,6 @@ public class ConfigController {
 
     public static int getPopulationSize() {
         return populationSize;
-    }
-
-    public static int getNumberOfSlots() {
-        return numberOfSlots;
-    }
-
-    public static double getStartBondOfSlots() {
-        return startBondOfSlots;
-    }
-
-    public static double getStopBondOfSlots() {
-        return stopBondOfSlots;
-    }
-
-    public static Map<String, Integer> getNumberOfUniqueAnswersForDataset() {
-        return numberOfUniqueAnswersForDataset;
     }
 
     public static Map<String, Integer> getSizeOfDataset() {
@@ -109,24 +95,32 @@ public class ConfigController {
         return tournamentSize;
     }
 
-    public static int getPercentOfReproduction() {
-        return (int) Math.round(percentOfReproduction * populationSize);
+    public static int getPercentOfReproductionOne() {
+        return (int) Math.round(percentOfReproductionOne * populationSize);
     }
 
-    public static int getPercentOfCrossover() {
-        return (int) Math.round(percentOfCrossover * populationSize);
+    public static int getPercentOfCrossoverOne() {
+        return (int) Math.round(percentOfCrossoverOne * populationSize);
     }
 
-    public static int getPercentOfMutation() {
-        return  (int) Math.round(percentOfMutation * populationSize);
+    public static int getPercentOfMutationOne() {
+        return  (int) Math.round(percentOfMutationOne * populationSize);
     }
 
-    public static int getNumberOfGenerationsBeforeEvolveMap() {
-        return numberOfGenerationsBeforeEvolveMap;
+    public static int getPercentOfReproductionTwo() {
+        return (int) Math.round(percentOfReproductionTwo * populationSize);
     }
 
-    public static int getNumberOfBatch() {
-        return numberOfBatch;
+    public static int getPercentOfCrossoverTwo() {
+        return (int) Math.round(percentOfCrossoverTwo * populationSize);
+    }
+
+    public static int getPercentOfMutationTwo() {
+        return  (int) Math.round(percentOfMutationTwo * populationSize);
+    }
+
+    public static int getPercentOfCrossbreeding() {
+        return  (int) Math.round(percentOfCrossbreeding * populationSize);
     }
 
     public static int getNumberOfRuns() {
@@ -159,10 +153,6 @@ public class ConfigController {
 
     public static int getPercentOfChromosomeToSaveInGPCRMethod() {
         return  (int) Math.round(percentOfChromosomeToSaveInGPCRMethod * populationSize);
-    }
-
-    public static int getPercentOfChromosomeToSaveInPSTMethod() {
-        return  (int) Math.round(percentOfChromosomeToSaveInPSTMethod * populationSize);
     }
 
     public static int getDepthOfPSTTree() {

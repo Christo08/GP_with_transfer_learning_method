@@ -21,8 +21,6 @@ public class DataCleaner {
 
     private static Random random;
 
-    private static double percentOfTrainingData =0.25;
-
     public static void main(String[] args) {
         pathToRawDataFolder = args[0];
         pathToCleanDataFolder = args[1];
@@ -51,6 +49,7 @@ public class DataCleaner {
         cleanWhiteWineDataSet();
         System.out.println();
     }
+
     private static void initialiseMaps() {
         dryBeamClassesMap = new HashMap<>();
         dryBeamClassesMap.put("SEKER","1");
@@ -88,11 +87,9 @@ public class DataCleaner {
             File avilaFile = new File(pathsToRawAvilaDataset);
             Scanner avilaReader = new Scanner(avilaFile);
 
-            String outputTesting ="";
-            String outputTraining ="";
+            String output ="";
 
             int numberOfTotalLines = 20867;
-            List<Integer> lineNumberOfTestingData = getLineNumberOfTestingData((int) Math.round(numberOfTotalLines * percentOfTrainingData), numberOfTotalLines);
 
             int numberOfLines =0;
 
@@ -103,11 +100,7 @@ public class DataCleaner {
                     if (!line.isEmpty()){
                         List<String> splitLine = Arrays.asList(line.split(","));
                         splitLine.set(splitLine.size()-1, avilaClassesMap.get(splitLine.get(splitLine.size()-1)));
-                        if (lineNumberOfTestingData.contains(numberOfLines-1)){
-                            outputTesting += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
-                        }else {
-                            outputTraining += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
-                        }
+                        output +=  splitLine.toString().replaceAll(" ", "").replaceAll("\\[", "").replaceAll("\\]","")+"\n";
                         printProgress(numberOfLines, numberOfTotalLines, "avila");
                     }
                 }
@@ -115,19 +108,13 @@ public class DataCleaner {
             }
             avilaReader.close();
 
-            String pathsToCleanAvilaTestingDataset = pathToCleanDataFolder+"\\Avila\\avila_ts.txt";
-            File cleanAvilaTestingFile = new File(pathsToCleanAvilaTestingDataset);
-            cleanAvilaTestingFile.createNewFile();
-            FileWriter dryBeamTestingWriter = new FileWriter(cleanAvilaTestingFile);
-            dryBeamTestingWriter.write(outputTesting);
-            dryBeamTestingWriter.close();
+            String pathsToCleanAvilaDataset = pathToCleanDataFolder+"\\Avila\\avila.txt";
+            File cleanAvilaFile = new File(pathsToCleanAvilaDataset);
+            cleanAvilaFile.createNewFile();
+            FileWriter avilaWriter = new FileWriter(cleanAvilaFile);
+            avilaWriter.write(output);
+            avilaWriter.close();
 
-            String pathsToCleanAvilaTrainingDataset = pathToCleanDataFolder+"\\Avila\\avila_tr.txt";
-            File cleanAvilaTrainingFile = new File(pathsToCleanAvilaTrainingDataset);
-            cleanAvilaTrainingFile.createNewFile();
-            FileWriter dryBeamTrainingWriter = new FileWriter(cleanAvilaTrainingFile);
-            dryBeamTrainingWriter.write(outputTraining);
-            dryBeamTrainingWriter.close();
         } catch (FileNotFoundException e) {
             System.out.println("Can not open dry beam data set.");
         } catch (IOException e) {
@@ -141,11 +128,9 @@ public class DataCleaner {
             File dryBeamFile = new File(pathsToRawDryBeamDataset);
             Scanner dryBeamReader = new Scanner(dryBeamFile);
 
-            String outputTesting ="";
-            String outputTraining ="";
+            String output ="";
 
             int numberOfTotalLines = 13611;
-            List<Integer> lineNumberOfTestingData = getLineNumberOfTestingData((int) Math.round(numberOfTotalLines * percentOfTrainingData), numberOfTotalLines);
 
             int numberOfLines =0;
 
@@ -156,11 +141,7 @@ public class DataCleaner {
                     if (!line.isEmpty()){
                         List<String> splitLine = Arrays.asList(line.split(","));
                         splitLine.set(splitLine.size()-1, dryBeamClassesMap.get(splitLine.get(splitLine.size()-1)));
-                        if (lineNumberOfTestingData.contains(numberOfLines-1)){
-                            outputTesting += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
-                        }else {
-                            outputTraining += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
-                        }
+                        output += splitLine.toString().replaceAll(" ", "").replaceAll("\\[", "").replaceAll("\\]","")+"\n";
                         printProgress(numberOfLines, numberOfTotalLines, "dry beam");
                     }
                 }
@@ -168,19 +149,13 @@ public class DataCleaner {
             }
             dryBeamReader.close();
 
-            String pathsToCleanDryBeamTestingDataset = pathToCleanDataFolder+"\\DryBeanDataset\\dryBeam_ts.txt";
-            File cleanDryBeamTestingFile = new File(pathsToCleanDryBeamTestingDataset);
-            cleanDryBeamTestingFile.createNewFile();
-            FileWriter dryBeamTestingWriter = new FileWriter(cleanDryBeamTestingFile);
-            dryBeamTestingWriter.write(outputTesting);
-            dryBeamTestingWriter.close();
+            String pathsToCleanDryBeamDataset = pathToCleanDataFolder+"\\DryBeanDataset\\dryBeam.txt";
+            File cleanDryBeamFile = new File(pathsToCleanDryBeamDataset);
+            cleanDryBeamFile.createNewFile();
+            FileWriter dryBeamWriter = new FileWriter(cleanDryBeamFile);
+            dryBeamWriter.write(output);
+            dryBeamWriter.close();
 
-            String pathsToCleanDryBeamTrainingDataset = pathToCleanDataFolder+"\\DryBeanDataset\\dryBeam_tr.txt";
-            File cleanDryBeamTrainingFile = new File(pathsToCleanDryBeamTrainingDataset);
-            cleanDryBeamTrainingFile.createNewFile();
-            FileWriter dryBeamTrainingWriter = new FileWriter(cleanDryBeamTrainingFile);
-            dryBeamTrainingWriter.write(outputTraining);
-            dryBeamTrainingWriter.close();
         } catch (FileNotFoundException e) {
             System.out.println("Can not open dry beam data set.");
         } catch (IOException e) {
@@ -194,11 +169,9 @@ public class DataCleaner {
             File irisFile = new File(pathsToRawIrisDataset);
             Scanner irisReader = new Scanner(irisFile);
 
-            String outputTesting ="";
-            String outputTraining ="";
+            String output ="";
 
             int numberOfTotalLines = 150;
-            List<Integer> lineNumberOfTestingData = getLineNumberOfTestingData((int) Math.round(numberOfTotalLines * percentOfTrainingData), numberOfTotalLines);
 
             int numberOfLines =0;
 
@@ -208,29 +181,18 @@ public class DataCleaner {
                     numberOfLines++;
                     List<String> splitLine = Arrays.asList(line.split(","));
                     splitLine.set(splitLine.size()-1, irisClassesMap.get(splitLine.get(splitLine.size()-1)));
-                    if (lineNumberOfTestingData.contains(numberOfLines-1)){
-                        outputTesting += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
-                    }else {
-                        outputTraining += splitLine.toString().replaceAll(" ","").replaceAll("\\[","").replaceAll("\\]","")+"\n";
-                    }
+                    output += splitLine.toString().replaceAll(" ", "").replaceAll("\\[", "").replaceAll("\\]","")+"\n";
                     printProgress(numberOfLines, numberOfTotalLines, "iris");
                 }
             }
             irisReader.close();
 
-            String pathsToCleanIrisTestingDataset = pathToCleanDataFolder+"\\Iris\\iris_ts.txt";
-            File cleanIrisTestingFile = new File(pathsToCleanIrisTestingDataset);
-            cleanIrisTestingFile.createNewFile();
-            FileWriter irisTestingWriter = new FileWriter(cleanIrisTestingFile);
-            irisTestingWriter.write(outputTesting);
-            irisTestingWriter.close();
-
-            String pathsToCleanIrisTrainingDataset = pathToCleanDataFolder+"\\Iris\\iris_tr.txt";
-            File cleanIrisTrainingFile = new File(pathsToCleanIrisTrainingDataset);
-            cleanIrisTrainingFile.createNewFile();
-            FileWriter irisTrainingWriter = new FileWriter(cleanIrisTrainingFile);
-            irisTrainingWriter.write(outputTraining);
-            irisTrainingWriter.close();
+            String pathsToCleanIrisDataset = pathToCleanDataFolder+"\\Iris\\iris.txt";
+            File cleanIrisFile = new File(pathsToCleanIrisDataset);
+            cleanIrisFile.createNewFile();
+            FileWriter irisWriter = new FileWriter(cleanIrisFile);
+            irisWriter.write(output);
+            irisWriter.close();
         } catch (FileNotFoundException e) {
             System.out.println("Can not open iris data set.");
         } catch (IOException e) {
@@ -244,11 +206,9 @@ public class DataCleaner {
             File seedsFile = new File(pathsToRawSeedsDataset);
             Scanner seedsReader = new Scanner(seedsFile);
 
-            String outputTesting ="";
-            String outputTraining ="";
+            String output ="";
 
             int numberOfTotalLines = 210;
-            List<Integer> lineNumberOfTestingData = getLineNumberOfTestingData((int) Math.round(numberOfTotalLines * percentOfTrainingData), numberOfTotalLines);
 
             int numberOfLines =0;
 
@@ -257,29 +217,18 @@ public class DataCleaner {
                 if (!line.isEmpty()){
                     line=line.replaceAll("\t\t","\t");
                     numberOfLines++;
-                    if (lineNumberOfTestingData.contains(numberOfLines-1)){
-                        outputTesting += line.replaceAll("\t",",")+"\n";
-                    }else {
-                        outputTraining += line.replaceAll("\t",",")+"\n";
-                    }
+                    output += line.replaceAll("\t",",")+"\n";
                     printProgress(numberOfLines, numberOfTotalLines, "seeds");
                 }
             }
             seedsReader.close();
 
-            String pathsToCleanSeedsTestingDataset = pathToCleanDataFolder+"\\Seeds\\seeds_ts.txt";
-            File cleanSeedsTestingFile = new File(pathsToCleanSeedsTestingDataset);
-            cleanSeedsTestingFile.createNewFile();
-            FileWriter seedsTestingWriter = new FileWriter(cleanSeedsTestingFile);
-            seedsTestingWriter.write(outputTesting);
-            seedsTestingWriter.close();
-
-            String pathsToCleanSeedsTrainingDataset = pathToCleanDataFolder+"\\Seeds\\seeds_tr.txt";
-            File cleanSeedsTrainingFile = new File(pathsToCleanSeedsTrainingDataset);
-            cleanSeedsTrainingFile.createNewFile();
-            FileWriter seedsTrainingWriter = new FileWriter(cleanSeedsTrainingFile);
-            seedsTrainingWriter.write(outputTraining);
-            seedsTrainingWriter.close();
+            String pathsToCleanSeedsDataset = pathToCleanDataFolder+"\\Seeds\\seeds_tr.txt";
+            File cleanSeedsFile = new File(pathsToCleanSeedsDataset);
+            cleanSeedsFile.createNewFile();
+            FileWriter seedsWriter = new FileWriter(cleanSeedsFile);
+            seedsWriter.write(output);
+            seedsWriter.close();
 
         } catch (FileNotFoundException e) {
             System.out.println("Can not open seeds data set.");
@@ -378,15 +327,4 @@ public class DataCleaner {
         System.out.print(string);
     }
 
-    private static List<Integer> getLineNumberOfTestingData(int numberOfTestingLines, int totalNumberOfLines) {
-        List<Integer> lineNumbers = new LinkedList<>();
-        int lineNumber;
-        while (lineNumbers.size() < numberOfTestingLines){
-            do {
-                lineNumber = random.nextInt(totalNumberOfLines);
-            }while (lineNumbers.contains(lineNumber));
-            lineNumbers.add(lineNumber);
-        }
-        return lineNumbers;
-    }
 }

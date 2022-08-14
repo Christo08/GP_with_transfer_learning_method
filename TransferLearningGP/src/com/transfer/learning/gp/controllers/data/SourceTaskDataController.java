@@ -1,29 +1,31 @@
 package com.transfer.learning.gp.controllers.data;
 
 import com.transfer.learning.gp.controllers.ConfigController;
+import com.transfer.learning.gp.controllers.gp.GPController;
 import com.transfer.learning.gp.controllers.gp.PopulationController;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.*;
 
-public class SourceTaskDataController extends DataController {
+public class SourceTaskDataController {
 
     private List<Map<String, Double>> dataSet1;
-    private String dataSet1Name;
 
     private List<Map<String, Double>> dataSet2;
-    private String dataSet2Name;
+
+    private static NumberFormat formatter = new DecimalFormat("#0.00");
 
     public SourceTaskDataController(String pathToData) throws FileNotFoundException {
         super();
         String pathToFile = pathToData+ ConfigController.getPathToTrainingDataset().get("WineQualityRed");
         File file = new File(pathToFile);
         Scanner reader = new Scanner(file);
-        dataSet1 = new LinkedList<>();
+        dataSet1 = new ArrayList<>();
         double numberOfLines =0;
-        dataSet1Name = pathToFile.substring(pathToFile.lastIndexOf("\\")+1, pathToFile.lastIndexOf("."));
-        double counterOfLines = ConfigController.getSizeOfDataset().get(dataSet1Name);
+        int counterOfLines = (int) (ConfigController.getSizeOfDataset().get("WineQualityRed"));
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
             if (!line.isEmpty()){
@@ -50,22 +52,19 @@ public class SourceTaskDataController extends DataController {
                     }
                 }
                 dataSet1.add(dataLine);
-                printProgress(numberOfLines, counterOfLines, dataSet1Name);
             }
         }
         reader.close();
-        System.out.println();
 
         pathToFile = pathToData+ConfigController.getPathToTrainingDataset().get("WineQualityWhite");
         file = new File(pathToFile);
         reader = new Scanner(file);
-        dataSet2 = new LinkedList<>();
+        dataSet2 = new ArrayList<>();
         numberOfLines =0;
-        dataSet2Name = pathToFile.substring(pathToFile.lastIndexOf("\\")+1, pathToFile.lastIndexOf("."));
-        counterOfLines = ConfigController.getSizeOfDataset().get(dataSet2Name);
+        counterOfLines = (int) (ConfigController.getSizeOfDataset().get("WineQualityWhite"));
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
-            if (!line.isEmpty()){
+            if (!line.isEmpty() ){
                 numberOfLines++;
 
                 List<String> splitLine = Arrays.asList(line.split(","));
@@ -89,23 +88,41 @@ public class SourceTaskDataController extends DataController {
                     }
                 }
                 dataSet2.add(dataLine);
-                printProgress(numberOfLines, counterOfLines, dataSet2Name);
             }
         }
         reader.close();
-        System.out.println();
-        dataSetName = dataSet2Name;
-        chanceMod();
     }
 
-    @Override
-    public void chanceMod() {
-        if (dataSetName.equals(dataSet1Name)){
-            dataSetName = dataSet2Name;
-            dataSet = dataSet2;
-        }else{
-            dataSetName = dataSet1Name;
-            dataSet = dataSet1;
+    public List<Map<String, Double>> getDataSet1() {
+        return dataSet1;
+    }
+
+    public List<Map<String, Double>> getDataSet2() {
+        return dataSet2;
+    }
+
+    private List<Integer> getLineNumberOfTrainingData(int totalNumberOfLines) {
+        List<Integer> lineNumbers = new ArrayList<>();
+        int lineNumber;
+        while (lineNumbers.size() < totalNumberOfLines*ConfigController.getPercentOfTrainingData()){
+            do {
+                lineNumber = GPController.getRandom().nextInt(totalNumberOfLines);
+            }while (lineNumbers.contains(lineNumber));
+            lineNumbers.add(lineNumber);
         }
+        return lineNumbers;
+    }
+
+    private static void printProgress(double current, int total, String dataSetName) {
+
+        StringBuilder string = new StringBuilder(140);
+        double percent = (current/(double) total)* 100;
+        string.append('\r')
+                .append(formatter.format(percent))
+                .append("% of ")
+                .append(dataSetName)
+                .append(" dataset cleaned.");
+
+        System.out.print(string);
     }
 }

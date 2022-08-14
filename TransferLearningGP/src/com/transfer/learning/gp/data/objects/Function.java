@@ -43,7 +43,7 @@ public class Function {
         this.returnType = functionString.charAt(1);
 
         parameterTypes = new HashMap<>();
-        parameters = new LinkedList<>();
+        parameters = new ArrayList<>();
 
         numberOfParameters =0;
         for (char character : functionString.toCharArray()) {

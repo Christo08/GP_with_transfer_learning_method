@@ -2,136 +2,73 @@ package com.transfer.learning.gp.data.objects.xml;
 
 import com.transfer.learning.gp.controllers.ConfigController;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 @XmlRootElement(name = "Experiment")
 @XmlAccessorType(XmlAccessType.FIELD)
-
 public class Experiment {
 
     private String dataSetName;
-    private int maxDepthOfStartingChromosomes;
 
-    private double padding;
-    private double minAccuracy;
-    private int numberOfRuns;
-
-    private int populationSize;
-    private int tournamentSize;
     private TransferLearningMethod transferLearningMethod;
 
     private List<Run> runs;
-    private List<GeneticOperatorsConfig> geneticOperatorsConfigs;
+
+    private GPSettings gpSettings;
+
+    private double avrgTestingAccuracy=0;
+
+    private double avrgTrainingAccuracy=0;
+
+    private double avrgGenerations=0;
+
+    private double avrgTotalDuration=0;
+
+    private double avrgDuration=0;
 
     public Experiment() {
+        runs = new ArrayList<>();
     }
 
     public Experiment(String dataSetName) {
+        this();
         this.dataSetName = dataSetName;
-
-        maxDepthOfStartingChromosomes = ConfigController.getMaxDepth();
-        minAccuracy = ConfigController.getMinAccuracy();
-        populationSize = ConfigController.getPopulationSize();
-        tournamentSize = ConfigController.getTournamentSize();
-        numberOfRuns = ConfigController.getNumberOfRuns();
-        padding = ConfigController.getPadding();
-
-        runs = new ArrayList<>();
-        geneticOperatorsConfigs = new ArrayList<>();
-
-        geneticOperatorsConfigs.add(new GeneticOperatorsConfig(1));
+        this.gpSettings = new GPSettings();
     }
 
-    public String getDataSetName() {
-        return dataSetName;
-    }
-
-    public void setDataSetName(String dataSetName) {
-        this.dataSetName = dataSetName;
-    }
-
-    public int getMaxDepthOfStartingChromosomes() {
-        return maxDepthOfStartingChromosomes;
-    }
-
-    public void setMaxDepthOfStartingChromosomes(int maxDepthOfStartingChromosomes) {
-        this.maxDepthOfStartingChromosomes = maxDepthOfStartingChromosomes;
-    }
-
-    public double getMinAccuracy() {
-        return minAccuracy;
-    }
-
-    public void setMinAccuracy(double minAccuracy) {
-        this.minAccuracy = minAccuracy;
-    }
-
-    public int getNumberOfRuns() {
-        return numberOfRuns;
-    }
-
-    public void setNumberOfRuns(int numberOfRuns) {
-        this.numberOfRuns = numberOfRuns;
-    }
-
-    public int getPopulationSize() {
-        return populationSize;
-    }
-
-    public void setPopulationSize(int populationSize) {
-        this.populationSize = populationSize;
-    }
-
-    public int getTournamentSize() {
-        return tournamentSize;
-    }
-
-    public void setTournamentSize(int tournamentSize) {
-        this.tournamentSize = tournamentSize;
-    }
-
-    public List<Run> getRuns() {
-        return runs;
-    }
-
-    public void setRuns(List<Run> runs) {
-        this.runs = runs;
-    }
-
-    public void addRun(Run run) {
-        this.runs.add(run);
-    }
-
-    public double getPadding() {
-        return padding;
-    }
-
-    public void setPadding(double padding) {
-        this.padding = padding;
-    }
-
-    public TransferLearningMethod getTransferLearningMethod() {
-        return transferLearningMethod;
-    }
-
-    public void setTransferLearningMethod(TransferLearningMethod transferLearningMethod) {
+    public Experiment(String dataSetName, TransferLearningMethod transferLearningMethod) {
+        this(dataSetName);
         this.transferLearningMethod = transferLearningMethod;
+        if (transferLearningMethod.getMethodName().contains("GPCR"))
+            gpSettings.setGPCRGeneticOperatorsConfigs(new GeneticOperatorsConfig(2));
     }
 
-    public List<GeneticOperatorsConfig> getGeneticOperatorsConfigs() {
-        return geneticOperatorsConfigs;
+    public void addRun(Run newRun) {
+        this.runs.add(newRun);
+        recalculateAverages();
     }
 
-    public void setGeneticOperatorsConfigs(List<GeneticOperatorsConfig> geneticOperatorsConfigs) {
-        this.geneticOperatorsConfigs = geneticOperatorsConfigs;
+    private void recalculateAverages(){
+        avrgTestingAccuracy=0;
+        avrgTrainingAccuracy=0;
+        avrgGenerations=0;
+        avrgTotalDuration=0;
+        avrgDuration=0;
+        for (Run run : runs) {
+            avrgTestingAccuracy += run.getTestingAccuracy();
+            avrgTrainingAccuracy += run.getTrainingAccuracy();
+            avrgGenerations += run.getGenerations();
+            avrgTotalDuration += run.getTotalDuration();
+            avrgDuration += run.getDuration();
+        }
+        avrgTestingAccuracy = avrgTestingAccuracy/(double) runs.size();
+        avrgTrainingAccuracy = avrgTrainingAccuracy/(double) runs.size();
+        avrgGenerations = avrgGenerations/(double) runs.size();
+        avrgTotalDuration = avrgTotalDuration/(double) runs.size();
+        avrgDuration = avrgDuration/(double) runs.size();
+
     }
 
-    public void addGeneticOperatorsConfig(GeneticOperatorsConfig geneticOperatorsConfig) {
-        this.geneticOperatorsConfigs.add(geneticOperatorsConfig);
-    }
 }

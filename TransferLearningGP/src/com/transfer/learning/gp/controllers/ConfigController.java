@@ -9,10 +9,10 @@ public class ConfigController {
     private final static int maxDepth =5;
     //Size of the population
     private final static int populationSize = 200;
-    //Min accuracy of final classifier before GP stops
-    private final static double minAccuracy = 95;
+    //Max accuracy of final classifier before GP stops
+    private final static double maxAccuracy = 95;
     //Number of times the accuracy can be in a bond
-    private final static int numberOfSameBeforeEnding = 25;
+    private final static int numberOfSameBeforeEnding = 10;
     //The bonds. See numberOfSameBeforeEnding
     private final static double padding = 1;
     //Number of runs in an experiment
@@ -22,13 +22,13 @@ public class ConfigController {
     //Percent of genetic operators used
     private final static double percentOfReproductionOne = 0.1;
     private final static double percentOfCrossoverOne = 0.3;
-    private final static double percentOfMutationOne = 0.6;
+    private final static double percentOfMutationOne = 0.60;
     private final static double percentOfReproductionTwo = 0.1;
     private final static double percentOfCrossoverTwo = 0.25;
     private final static double percentOfMutationTwo = 0.25;
     private final static double percentOfCrossbreeding=0.4;
     //Crossover can only be applied before this depth.
-    private final static int maxDepthOfCrossover = 100;
+    private final static int maxDepthOfCrossover = 1000000;
     //Transfer learning method config
     //Percent of the population which is saved
     private final static double percentOfChromosomeToSaveInFullTreeMethod = 0.5;
@@ -38,34 +38,24 @@ public class ConfigController {
     //Other config
     //Size of data set
     private final static Map<String, Integer> sizeOfDataset =new HashMap<>(){{
-        put("Avila_ts",15649);
-        put("Avila_tr",5217);
-        put("DryBeam_ts",10208);
-        put("DryBeam_tr",3103);
-        put("Iris_ts",112);
-        put("Iris_tr",38);
-        put("Seeds_ts",157);
-        put("Seeds_tr",53);
-        put("wineQualityRed",1599);
-        put("wineQualityWhite",4898);
+        put("Avila",20866);
+        put("DryBeam",13611);
+        put("Iris",150);
+        put("Seeds",210);
+        put("WineQualityRed",1599);
+        put("WineQualityWhite",4898);
     }};
     //Paths to data sets
     private final static Map<String, String> pathToTrainingDataset = new HashMap<>(){{
-        put("Avila","\\Avila\\avila_tr.txt");
-        put("DryBeam","\\DryBeanDataset\\dryBeam_tr.txt");
-        put("Iris","\\Iris\\iris_tr.txt");
-        put("Seeds","\\Seeds\\seeds_tr.txt");
+        put("Avila","\\Avila\\avila.txt");
+        put("DryBeam","\\DryBeanDataset\\dryBeam.txt");
+        put("Iris","\\Iris\\iris.txt");
+        put("Seeds","\\Seeds\\seeds.txt");
         put("WineQualityRed","\\WineRed\\wineQualityRed.txt");
         put("WineQualityWhite","\\WineWhite\\wineQualityWhite.txt");
     }};
-    private final static Map<String, String> pathToTestingDataset = new HashMap<>(){{
-        put("Avila","\\Avila\\avila_ts.txt");
-        put("DryBeam","\\DryBeanDataset\\dryBeam_ts.txt");
-        put("Iris","\\Iris\\iris_ts.txt");
-        put("Seeds","\\Seeds\\seeds_ts.txt");
-    }};
-
-    private final static int depthOfPSTTree = 5;
+    //Percent of training data
+    private static double percentOfTrainingData =0.25;
 
     public static int getMaxDepth() {
         return maxDepth;
@@ -83,12 +73,8 @@ public class ConfigController {
         return pathToTrainingDataset;
     }
 
-    public static Map<String, String> getPathToTestingDataset() {
-        return pathToTestingDataset;
-    }
-
-    public static double getMinAccuracy() {
-        return minAccuracy;
+    public static double getMaxAccuracy() {
+        return maxAccuracy;
     }
 
     public static int getTournamentSize() {
@@ -155,7 +141,7 @@ public class ConfigController {
         return  (int) Math.round(percentOfChromosomeToSaveInGPCRMethod * populationSize);
     }
 
-    public static int getDepthOfPSTTree() {
-        return depthOfPSTTree;
+    public static double getPercentOfTrainingData() {
+        return percentOfTrainingData;
     }
 }

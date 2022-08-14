@@ -24,7 +24,7 @@ public class Main {
                 long seed;
                 if (Integer.parseInt(reader.readLine()) == 1){
                     System.out.println("Please enter the seed:");
-                    seed =Long.parseLong(reader.readLine());
+                    seed = Long.parseLong(reader.readLine());
                 }else{
                     seed = GPController.getRandom().nextLong();
                 }
@@ -35,10 +35,11 @@ public class Main {
                 String datasetNames = "";
                 String datasetName;
                 int counter = 1;
-                List<String> keys = new ArrayList<>(ConfigController.getPathToTestingDataset().keySet());
+                List<String> keys = new ArrayList<>(ConfigController.getSizeOfDataset().keySet());
                 keys = keys.stream()
-                        .sorted(Comparator.naturalOrder())
-                        .collect(Collectors.toList());
+                           .filter(key -> !key.contains("Wine"))
+                           .sorted(Comparator.naturalOrder())
+                           .collect(Collectors.toList());
                 for (String key:keys) {
                     datasetNames += counter+" "+key+"\n";
                     counter++;
@@ -46,7 +47,6 @@ public class Main {
                 System.out.println("Please enter a number to select a dataset:");
                 System.out.print(datasetNames);
                 datasetName = keys.get(Integer.parseInt(reader.readLine())-1);
-
 
                 GPController gpController = new GPController(args[0], seed);
                 if (mod == 1){

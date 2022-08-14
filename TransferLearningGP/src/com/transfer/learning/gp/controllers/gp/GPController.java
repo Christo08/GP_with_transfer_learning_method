@@ -1,15 +1,11 @@
 package com.transfer.learning.gp.controllers.gp;
 
 import com.transfer.learning.gp.controllers.ConfigController;
-import com.transfer.learning.gp.controllers.data.DataController;
 import com.transfer.learning.gp.controllers.data.SourceTaskDataController;
 import com.transfer.learning.gp.controllers.data.TargetTaskDataController;
 import com.transfer.learning.gp.data.objects.Chromosome;
 import com.transfer.learning.gp.data.objects.ChromosomeWrapper;
-import com.transfer.learning.gp.data.objects.xml.Experiment;
-import com.transfer.learning.gp.data.objects.xml.GeneticOperatorsConfig;
-import com.transfer.learning.gp.data.objects.xml.Run;
-import com.transfer.learning.gp.data.objects.xml.TransferLearningMethod;
+import com.transfer.learning.gp.data.objects.xml.*;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -22,7 +18,8 @@ public class GPController {
     private static Random random = new Random();
     private TransferLearningController transferLearningController;
 
-    private DataController dataController;
+    private TargetTaskDataController targetTaskDataController;
+    private SourceTaskDataController sourceTaskDataController;
     private PopulationController populationController;
     private long seed;
     private double oldBestChromosomesAccuracy;
@@ -47,15 +44,6 @@ public class GPController {
         return random;
     }
 
-    public double fitnessOfChromosomes(int counter) {
-        double numberOfCorrect =0;
-        for (Map<String, Double> dataLine: dataController.getDataSet()) {
-            if (populationController.evaluateChromosomes(dataLine,counter) == dataLine.get("ans"))
-                numberOfCorrect++;
-        }
-        return numberOfCorrect/((double)dataController.getDataSet().size()) * 100;
-    }
-
     public List<ChromosomeWrapper> getTopPercentageOfPopulation(int size) {
 
         return populationController.getTopChromosomes(size);
@@ -66,7 +54,7 @@ public class GPController {
     }
 
     private List<Integer> selectParents(int numberOfParentsNeeded) {
-        List<Integer> indexes = new LinkedList<>();
+        List<Integer> indexes = new ArrayList<>();
         for (int counter =0; counter< numberOfParentsNeeded; counter++) {
             int newIndexes;
             do {
@@ -77,12 +65,19 @@ public class GPController {
         return indexes;
     }
 
-    private int findBestChromosomes() {
+    private int findBestChromosomes(List<Map<String, Double>> dataLines) {
         double maxFitness =0;
         double fitness;
         int chromosomesIndex=0;
         for (int counter = 0; counter < ConfigController.getPopulationSize(); counter++){
-            fitness = fitnessOfChromosomes(counter);
+
+            double numberOfCorrect =0;
+
+            for (Map<String, Double> dataLine: dataLines) {
+                if (populationController.evaluateChromosomes(dataLine,counter) == dataLine.get("ans"))
+                    numberOfCorrect++;
+            }
+            fitness= numberOfCorrect/((double)dataLines.size()) * 100;
 
             populationController.addFitnessOfChromosomes(counter, fitness);
 
@@ -110,140 +105,192 @@ public class GPController {
         return bestIndex;
     }
 
-    private double getAccuracyOnTestingDataset(int counter){
+    private double getAccuracyOnTestingDataset(int counter, List<Map<String, Double>> trainingDataSet){
         double numberOfCorrect =0;
-        dataController.chanceMod();
-        for (Map<String, Double> dataLine: dataController.getDataSet()) {
+        for (Map<String, Double> dataLine: trainingDataSet) {
             if (populationController.evaluateChromosomes(dataLine,counter) == dataLine.get("ans"))
                 numberOfCorrect++;
         }
-        double trainingDataSize = dataController.getDataSet().size();
-        dataController.chanceMod();
-        return numberOfCorrect/trainingDataSize * 100;
-
+        return numberOfCorrect/(double)trainingDataSet.size() * 100;
     }
 
-    private void convertObjectToXML(Experiment experiment, boolean hasTransferLearning) throws JAXBException {
+    private void convertObjectToXML(Experiment experiment, boolean hasTransferLearning, String transferLearningType) throws JAXBException {
         // create JAXB context and instantiate marshaller
         JAXBContext context = JAXBContext.newInstance(Experiment.class);
         Marshaller marshaller = context.createMarshaller();
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
         // Write to File
         if (hasTransferLearning)
-            marshaller.marshal(experiment, new File(pathToData +"\\Experiment\\"+dataSetName+"\\"+startTime+"_TL_Experiment.xml"));
+            marshaller.marshal(experiment, new File(pathToData +"\\Experiment\\"+dataSetName+"\\"+startTime+"_TL_"+transferLearningType+"_Experiment.xml"));
         else
             marshaller.marshal(experiment, new File(pathToData +"\\Experiment\\"+dataSetName+"\\"+startTime+"_Experiment.xml"));
     }
 
     public void trainWithoutTransferLearning(String dataSetName) throws FileNotFoundException, JAXBException {
         this.dataSetName = dataSetName;
-        dataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
-        populationController.initPopulation();
-        this.startTime = System.currentTimeMillis();
 
+        this.startTime = System.currentTimeMillis();
         Experiment experiment = new Experiment(dataSetName);
-        TransferLearningMethod transferLearningMethod = new TransferLearningMethod();
-        experiment.setTransferLearningMethod(transferLearningMethod);
         for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
+            System.out.println("Start run "+runCounter);
             experiment.addRun(runGPWithoutTransferLearning(runCounter));
-            convertObjectToXML(experiment, false);
-            populationController.recreatePopulation();
+            convertObjectToXML(experiment, false,"");
+            System.out.println("End run "+runCounter);
         }
     }
 
     public void trainWithTransferLearning(String dataSetName) throws IOException, JAXBException {
-            System.out.println("Please set a transfer learning method, by entering the number:");
-            System.out.println("0 exit");
-            System.out.println("1 Full tree");
-            System.out.println("2 Sub-tree");
-            System.out.println("3 Best gen");
-            System.out.println("4 GPCR");
-            System.out.println("5 PST");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            transferLearningMod = Integer.parseInt(reader.readLine());
+        System.out.println("Please set a transfer learning method, by entering the number:");
+        System.out.println("1 Full tree");
+        System.out.println("2 Sub-tree");
+        System.out.println("3 Best gen");
+        System.out.println("4 GPCR");
+        System.out.println("5 PST");
+        System.out.println("6 All");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        transferLearningMod = Integer.parseInt(reader.readLine());
+        this.startTime = System.currentTimeMillis();
 
-            this.dataController = new SourceTaskDataController(pathToData+"\\Cleaned");
+        this.dataSetName = dataSetName;
 
-            this.dataSetName = dataSetName;
+        if (transferLearningMod == 6){
+            transferLearningMod=1;
+            while (transferLearningMod < 6){
+                if (transferLearningMod == 1){
+                    TransferLearningMethod transferLearningMethod = new TransferLearningMethod("Full tree",transferLearningController.getPathToFolder(transferLearningMod));
+                    Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
+                    for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
+                        System.out.println("Start run "+runCounter+" for Full tree");
+                        experiment.addRun(runGPWithFullTreeTransferLearning(runCounter));
+                        convertObjectToXML(experiment,true,"FullTree");
+                        System.out.println("End run "+runCounter+" for Full tree");
+                    }
+                }
+                else if (transferLearningMod == 2){
+                    TransferLearningMethod transferLearningMethod = new TransferLearningMethod("Sub-tree",transferLearningController.getPathToFolder(transferLearningMod));
+                    Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
 
-            Experiment experiment = new Experiment(dataSetName);
-            populationController.initPopulation();
-            this.startTime = System.currentTimeMillis();
-            if (transferLearningMod == 1){
-                TransferLearningMethod transferLearningMethod = new TransferLearningMethod("Full tree",transferLearningController.getPathToFolder(transferLearningMod));
-                experiment.setTransferLearningMethod(transferLearningMethod);
-                for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
-                    experiment.addRun(runGPWithFullTreeTransferLearning(runCounter));
-                    convertObjectToXML(experiment,true);
-                    populationController.resetSets();
-                    this.dataController = new SourceTaskDataController(pathToData+"\\Cleaned");
-                    populationController.recreatePopulation();
+                    for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
+                        System.out.println("Start run "+runCounter+" for Sub-tree");
+                        experiment.addRun(runGPWithSubTreeTransferLearning(runCounter));
+                        convertObjectToXML(experiment,true,"SubTree");
+                        System.out.println("End run "+runCounter+" for Sub-tree");
+                    }
                 }
-            }
-            else if (transferLearningMod == 2){
-                TransferLearningMethod transferLearningMethod = new TransferLearningMethod("Sub-tree",transferLearningController.getPathToFolder(transferLearningMod));
-                experiment.setTransferLearningMethod(transferLearningMethod);
-                for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
-                    experiment.addRun(runGPWithSubTreeTransferLearning(runCounter));
-                    convertObjectToXML(experiment,true);
-                    populationController.resetSets();
-                    this.dataController = new SourceTaskDataController(pathToData+"\\Cleaned");
-                    populationController.recreatePopulation();
+                else if (transferLearningMod == 3){
+                    TransferLearningMethod transferLearningMethod = new TransferLearningMethod("Best gen",transferLearningController.getPathToFolder(transferLearningMod));
+                    Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
+
+                    for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
+                        System.out.println("Start run "+runCounter+" for BestGen");
+                        experiment.addRun(runGPWithBestGenTransferLearning(runCounter));
+                        convertObjectToXML(experiment,true,"BestGen");
+                        System.out.println("End run "+runCounter+" for BestGen");
+                    }
                 }
-            }
-            else if (transferLearningMod == 3){
-                TransferLearningMethod transferLearningMethod = new TransferLearningMethod("Best gen",transferLearningController.getPathToFolder(transferLearningMod));
-                experiment.setTransferLearningMethod(transferLearningMethod);
-                for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
-                    experiment.addRun(runGPWithBestGenTransferLearning(runCounter));
-                    convertObjectToXML(experiment,true);
-                    populationController.resetSets();
-                    this.dataController = new SourceTaskDataController(pathToData+"\\Cleaned");
-                    populationController.recreatePopulation();
+                else if (transferLearningMod == 4){
+                    TransferLearningMethod transferLearningMethod = new TransferLearningMethod("GPCR",transferLearningController.getPathToFolder(transferLearningMod));
+                    Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
+
+                    for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
+                        System.out.println("Start run "+runCounter+" for GPCR");
+                        experiment.addRun(runGPWithGPCRTransferLearning(runCounter));
+                        convertObjectToXML(experiment,true,"GPCR");
+                        System.out.println("End run "+runCounter+" for GPCR");
+                    }
                 }
-            }
-            else if (transferLearningMod == 4){
-                TransferLearningMethod transferLearningMethod = new TransferLearningMethod("GPCR",transferLearningController.getPathToFolder(transferLearningMod));
-                experiment.setTransferLearningMethod(transferLearningMethod);
-                experiment.addGeneticOperatorsConfig(new GeneticOperatorsConfig(2));
-                for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
-                    experiment.addRun(runGPWithGPCRTransferLearning(runCounter));
-                    convertObjectToXML(experiment,true);
-                    populationController.resetSets();
-                    this.dataController = new SourceTaskDataController(pathToData+"\\Cleaned");
-                    populationController.recreatePopulation();
-                }
-            }
-            else if (transferLearningMod == 5){
-                for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++) {
+                else if (transferLearningMod == 5){
                     TransferLearningMethod transferLearningMethod = new TransferLearningMethod("PST", transferLearningController.getPathToFolder(transferLearningMod));
-                    experiment.setTransferLearningMethod(transferLearningMethod);
-                    experiment.addRun(runGPWithPSTTransferLearning(runCounter));
-                    convertObjectToXML(experiment, true);
-                    populationController.resetSets();
-                    this.dataController = new SourceTaskDataController(pathToData+"\\Cleaned");
-                    populationController.recreatePopulation();
+                    Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
+
+                    for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++) {
+                        System.out.println("Start run "+runCounter+" for PST");
+                        experiment.addRun(runGPWithPSTTransferLearning(runCounter));
+                        convertObjectToXML(experiment, true, "PST");
+                        System.out.println("End run "+runCounter+" for PST");
+                    }
+                }
+                this.startTime = System.currentTimeMillis();
+                transferLearningMod++;
+            }
+        }
+        else if (transferLearningMod == 1){
+            TransferLearningMethod transferLearningMethod = new TransferLearningMethod("Full tree",transferLearningController.getPathToFolder(transferLearningMod));
+            Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
+            for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
+                System.out.println("Start run "+runCounter);
+                experiment.addRun(runGPWithFullTreeTransferLearning(runCounter));
+                convertObjectToXML(experiment,true,"FullTree");
+                System.out.println("End run "+runCounter);
+            }
+        }
+        else if (transferLearningMod == 2){
+                TransferLearningMethod transferLearningMethod = new TransferLearningMethod("Sub-tree",transferLearningController.getPathToFolder(transferLearningMod));
+                Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
+
+                for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
+                    System.out.println("Start run "+runCounter);
+                    experiment.addRun(runGPWithSubTreeTransferLearning(runCounter));
+                    convertObjectToXML(experiment,true,"SubTree");
+                    System.out.println("End run "+runCounter);
                 }
             }
-            else {
-                return;
+        else if (transferLearningMod == 3){
+                TransferLearningMethod transferLearningMethod = new TransferLearningMethod("Best gen",transferLearningController.getPathToFolder(transferLearningMod));
+                Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
+
+                for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
+                    System.out.println("Start run "+runCounter);
+                    experiment.addRun(runGPWithBestGenTransferLearning(runCounter));
+                    convertObjectToXML(experiment,true,"BestGen");
+                    System.out.println("End run "+runCounter);
+                }
+            }
+        else if (transferLearningMod == 4){
+                TransferLearningMethod transferLearningMethod = new TransferLearningMethod("GPCR",transferLearningController.getPathToFolder(transferLearningMod));
+                Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
+
+                for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++){
+                    System.out.println("Start run "+runCounter);
+                    experiment.addRun(runGPWithGPCRTransferLearning(runCounter));
+                    convertObjectToXML(experiment,true,"GPCR");
+                    System.out.println("End run "+runCounter);
+                }
+            }
+        else if (transferLearningMod == 5){
+                TransferLearningMethod transferLearningMethod = new TransferLearningMethod("PST", transferLearningController.getPathToFolder(transferLearningMod));
+                Experiment experiment = new Experiment(dataSetName,transferLearningMethod);
+
+                for (int runCounter = 1; runCounter <= ConfigController.getNumberOfRuns(); runCounter++) {
+                    System.out.println("Start run "+runCounter);
+                    experiment.addRun(runGPWithPSTTransferLearning(runCounter));
+                    convertObjectToXML(experiment, true, "PST");
+                    System.out.println("End run "+runCounter);
+                }
             }
     }
 
-    private Run runGPWithoutTransferLearning(int runNumber){
-        Run run = new Run();
-        run.setRunNumber(runNumber);
+    private Run runGPWithoutTransferLearning(int runNumber) throws FileNotFoundException {
         seed = random.nextLong();
         random.setSeed(seed);
-        run.setSeed(seed);
-        int indexOfBestChromosomes =findBestChromosomes();
-        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
         int counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        run.setStartTimeStampOfTargetDataset(System.currentTimeMillis());
+        long stopTimeStamp;
+        int genCounter = 0;
+
+        populationController.resetSets();
+
+        targetTaskDataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
+        long startTimeStamp = System.currentTimeMillis();
+        populationController.createPopulation();
+
+        int indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
+        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
+        Run run = new Run(runNumber, seed, startTimeStamp);
+        TargetDataSet targetDataSet = new TargetDataSet(startTimeStamp);
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -260,7 +307,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -271,38 +318,52 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnSourceDatasetOne(counter+1);
-                counter = counter+1;
+                genCounter = genCounter+1;
+                targetDataSet.setNumberOfGenerations(genCounter);
             }
-            run.setStopTimeStampOfTargetDataset(System.currentTimeMillis());
-            run.setAccuracyOnTargetTrainingDataset(bestChromosomesAccuracy);
-            run.setAccuracyOnTargetTestingDataset(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunSourceOneSuccessful(true);
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(bestChromosomesAccuracy);
+            targetDataSet.setTestingAccuracy(getAccuracyOnTestingDataset(indexOfBestChromosomes,targetTaskDataController.getTestingDataSet()));
+            targetDataSet.setHasError(false);
         }
         catch (Exception exception){
-            run.setRunSourceOneSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(0);
+            targetDataSet.setTestingAccuracy(0);
+            targetDataSet.setHasError(true);
             exception.printStackTrace();
         }
+
+        targetDataSet.setNumberOfGenerations(genCounter);
+        targetDataSet.setStopTimeStamp(stopTimeStamp);
+
+        run.setStopTimeStamp(stopTimeStamp);
+        run.setTargetDataSet(targetDataSet);
         return run;
     }
 
     private Run runGPWithFullTreeTransferLearning(int runNumber) throws FileNotFoundException {
-        Run run = new Run();
-        run.setRunNumber(runNumber);
         seed = random.nextLong();
         random.setSeed(seed);
-        run.setSeed(seed);
 
-        int indexOfBestChromosomes =findBestChromosomes();
-        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
         int counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Training data");
-        run.setStartTimeStampOfSourceDatasetOne(System.currentTimeMillis());
+        int genCounter = 0;
+        long stopTimeStamp;
+
+        populationController.resetSets();
+        sourceTaskDataController = new SourceTaskDataController(pathToData+"\\Cleaned");
+
+        long startTimeStampSource = System.currentTimeMillis();
+        populationController.createPopulation();
+
+        int indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
+        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
+
+        Run run = new Run(runNumber, seed, startTimeStampSource);
+        SourceDataSet sourceDataSet = new SourceDataSet(startTimeStampSource);
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -319,7 +380,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -330,34 +391,44 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnSourceDatasetOne(counter+1);
-                counter = counter+1;
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfSourceDatasetOne(System.currentTimeMillis());
-            run.setAccuracyOnSourceTrainingDatasetOne(bestChromosomesAccuracy);
-            run.setAccuracyOnSourceTestingDatasetOne(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunSourceOneSuccessful(true);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSet.setAccuracy(bestChromosomesAccuracy);
+            sourceDataSet.setHasError(false);
         }
         catch (Exception exception){
-            run.setRunSourceOneSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSet.setAccuracy(0);
+            sourceDataSet.setHasError(true);
             exception.printStackTrace();
         }
+        sourceDataSet.setNumberOfGenerations(genCounter);
+        sourceDataSet.setStopTimeStamp(stopTimeStamp);
 
-        transferLearningController.exportFullTree(startTime, runNumber);
+        run.setSourceDataSetOne(sourceDataSet);
+        if (sourceDataSet.isHasError()){
+            run.setStopTimeStamp(System.currentTimeMillis());
+            return run;
+        }
+
+        transferLearningController.exportFullTree(startTimeStampSource, runNumber);
         populationController.resetSets();
-        this.dataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
-        populationController.replaceChromosomes(transferLearningController.importFullTree(startTime, runNumber));
+        targetTaskDataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
 
-        indexOfBestChromosomes =findBestChromosomes();
+        long startTimeStamp = System.currentTimeMillis();
+        populationController.replaceChromosomes(transferLearningController.importFullTree(startTimeStampSource, runNumber));
+
+        indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
         bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
         counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Testing data");
-        run.setStartTimeStampOfTargetDataset(System.currentTimeMillis());
+        genCounter = 0;
+
+        TargetDataSet targetDataSet = new TargetDataSet(startTimeStamp);
+
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -374,7 +445,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -385,93 +456,52 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnTrainingDataset(counter+1);
-                counter = counter+1;
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfTargetDataset(System.currentTimeMillis());
-            run.setAccuracyOnTargetTrainingDataset(bestChromosomesAccuracy);
-            run.setAccuracyOnTargetTestingDataset(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunTargetSuccessful(true);
-        }catch (Exception exception){
-            run.setRunTargetSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(bestChromosomesAccuracy);
+            targetDataSet.setTestingAccuracy(getAccuracyOnTestingDataset(indexOfBestChromosomes,targetTaskDataController.getTestingDataSet()));
+            targetDataSet.setHasError(false);
+
+        }
+        catch (Exception exception){
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(0);
+            targetDataSet.setTestingAccuracy(0);
+            targetDataSet.setHasError(true);
             exception.printStackTrace();
         }
 
+        targetDataSet.setNumberOfGenerations(genCounter);
+        targetDataSet.setStopTimeStamp(stopTimeStamp);
+
+        run.setStopTimeStamp(stopTimeStamp);
+        run.setTargetDataSet(targetDataSet);
         return run;
     }
 
     private Run runGPWithSubTreeTransferLearning(int runNumber) throws FileNotFoundException {
-        Run run = new Run();
-        run.setRunNumber(runNumber);
         seed = random.nextLong();
         random.setSeed(seed);
-        run.setSeed(seed);
 
-        int indexOfBestChromosomes =findBestChromosomes();
-        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
         int counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Training data");
-        run.setStartTimeStampOfSourceDatasetOne(System.currentTimeMillis());
-        try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
-                List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
-                newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
+        int genCounter = 0;
+        long stopTimeStamp;
 
-                List<Integer> mutationIndexes = selectParents(ConfigController.getPercentOfMutationOne());
-                for (int index: mutationIndexes){
-                    newChromosomes.add(populationController.mutationChromosomes(index));
-                }
-
-                List<Integer> crossoverIndexes = selectParents(ConfigController.getPercentOfCrossoverOne());
-                for (int counter1 = 0; counter1 < ConfigController.getPercentOfCrossoverOne(); counter1+=2){
-                    newChromosomes.addAll(populationController.crossoverChromosomes(crossoverIndexes.get(counter1),crossoverIndexes.get(counter1+1)));
-                }
-
-                populationController.setChromosomes(newChromosomes);
-
-                oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
-                bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
-
-                if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
-                        (bestChromosomesAccuracy - ConfigController.getPadding() <= oldBestChromosomesAccuracy ))
-                    counterChange++;
-                else
-                    counterChange =0;
-                if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
-                    break;
-                }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnSourceDatasetOne(counter+1);
-                counter = counter+1;
-            }
-            run.setStopTimeStampOfSourceDatasetOne(System.currentTimeMillis());
-            run.setAccuracyOnSourceTrainingDatasetOne(bestChromosomesAccuracy);
-            run.setAccuracyOnSourceTestingDatasetOne(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunSourceOneSuccessful(true);
-        }
-        catch (Exception exception){
-            run.setRunSourceOneSuccessful(false);
-            exception.printStackTrace();
-        }
-
-        transferLearningController.exportSubTree(startTime, runNumber);
         populationController.resetSets();
-        this.dataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
-        populationController.replaceChromosomes(transferLearningController.importSubTree(startTime, runNumber));
+        sourceTaskDataController = new SourceTaskDataController(pathToData+"\\Cleaned");
 
-        indexOfBestChromosomes =findBestChromosomes();
-        bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
-        counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Training data");
-        run.setStartTimeStampOfTargetDataset(System.currentTimeMillis());
+        long startTimeStampSource = System.currentTimeMillis();
+        populationController.createPopulation();
+
+        int indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
+        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
+        Run run = new Run(runNumber, seed, startTimeStampSource);
+        SourceDataSet sourceDataSet = new SourceDataSet(startTimeStampSource);
+
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -488,7 +518,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -499,39 +529,117 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnTrainingDataset(counter+1);
-                counter = counter+1;
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfTargetDataset(System.currentTimeMillis());
-            run.setAccuracyOnTargetTrainingDataset(bestChromosomesAccuracy);
-            run.setAccuracyOnTargetTestingDataset(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunTargetSuccessful(true);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSet.setAccuracy(bestChromosomesAccuracy);
+            sourceDataSet.setHasError(false);
         }
         catch (Exception exception){
-            run.setRunTargetSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSet.setAccuracy(0);
+            sourceDataSet.setHasError(true);
+            exception.printStackTrace();
+        }
+        sourceDataSet.setNumberOfGenerations(genCounter);
+        sourceDataSet.setStopTimeStamp(stopTimeStamp);
+
+        run.setSourceDataSetOne(sourceDataSet);
+        if (sourceDataSet.isHasError()){
+            run.setStopTimeStamp(System.currentTimeMillis());
+            return run;
+        }
+
+        transferLearningController.exportSubTree(startTimeStampSource, runNumber);
+        populationController.resetSets();
+        targetTaskDataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
+
+        long startTimeStamp = System.currentTimeMillis();
+        populationController.replaceChromosomes(transferLearningController.importSubTree(startTimeStampSource, runNumber));
+
+        indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
+        bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
+        counterChange =0;
+        genCounter = 0;
+
+        TargetDataSet targetDataSet = new TargetDataSet(startTimeStamp);
+
+        try {
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
+                List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
+                newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
+
+                List<Integer> mutationIndexes = selectParents(ConfigController.getPercentOfMutationOne());
+                for (int index: mutationIndexes){
+                    newChromosomes.add(populationController.mutationChromosomes(index));
+                }
+
+                List<Integer> crossoverIndexes = selectParents(ConfigController.getPercentOfCrossoverOne());
+                for (int counter1 = 0; counter1 < ConfigController.getPercentOfCrossoverOne(); counter1+=2){
+                    newChromosomes.addAll(populationController.crossoverChromosomes(crossoverIndexes.get(counter1),crossoverIndexes.get(counter1+1)));
+                }
+
+                populationController.setChromosomes(newChromosomes);
+
+                oldBestChromosomesAccuracy = bestChromosomesAccuracy;
+                indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
+                bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
+                if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
+                        (bestChromosomesAccuracy - ConfigController.getPadding() <= oldBestChromosomesAccuracy ))
+                    counterChange++;
+                else
+                    counterChange =0;
+                if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
+                    break;
+                }
+                genCounter = genCounter+1;
+            }
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(bestChromosomesAccuracy);
+            targetDataSet.setTestingAccuracy(getAccuracyOnTestingDataset(indexOfBestChromosomes,targetTaskDataController.getTestingDataSet()));
+            targetDataSet.setHasError(false);
+
+        }
+        catch (Exception exception){
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(0);
+            targetDataSet.setTestingAccuracy(0);
+            targetDataSet.setHasError(true);
             exception.printStackTrace();
         }
 
+        targetDataSet.setNumberOfGenerations(genCounter);
+        targetDataSet.setStopTimeStamp(stopTimeStamp);
+
+        run.setStopTimeStamp(stopTimeStamp);
+        run.setTargetDataSet(targetDataSet);
         return run;
     }
 
     private Run runGPWithBestGenTransferLearning(int runNumber) throws FileNotFoundException {
-        Run run = new Run();
-        run.setRunNumber(runNumber);
         seed = random.nextLong();
         random.setSeed(seed);
-        run.setSeed(seed);
 
-        int indexOfBestChromosomes =findBestChromosomes();
-        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
         int counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Training data");
-        run.setStartTimeStampOfSourceDatasetOne(System.currentTimeMillis());
+        int genCounter = 0;
+        long stopTimeStamp;
+
+        populationController.resetSets();
+        sourceTaskDataController = new SourceTaskDataController(pathToData+"\\Cleaned");
+
+        long startTimeStampSource = System.currentTimeMillis();
+        populationController.createPopulation();
+
+        int indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
+        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
+
+        Run run = new Run(runNumber, seed, startTimeStampSource);
+        SourceDataSet sourceDataSet = new SourceDataSet(startTimeStampSource);
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -548,7 +656,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 transferLearningController.addChromosomesToBestGenArray(getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInBestGenMethod()));
@@ -561,34 +669,44 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnSourceDatasetOne(counter+1);
-                counter = counter+1;
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfSourceDatasetOne(System.currentTimeMillis());
-            run.setAccuracyOnSourceTrainingDatasetOne(bestChromosomesAccuracy);
-            run.setAccuracyOnSourceTestingDatasetOne(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunSourceOneSuccessful(true);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSet.setAccuracy(bestChromosomesAccuracy);
+            sourceDataSet.setHasError(false);
         }
         catch (Exception exception){
-            run.setRunSourceOneSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSet.setAccuracy(0);
+            sourceDataSet.setHasError(true);
             exception.printStackTrace();
         }
+        sourceDataSet.setNumberOfGenerations(genCounter);
+        sourceDataSet.setStopTimeStamp(stopTimeStamp);
 
-        transferLearningController.exportBestGen(startTime, runNumber);
+        run.setSourceDataSetOne(sourceDataSet);
+        if (sourceDataSet.isHasError()){
+            run.setStopTimeStamp(System.currentTimeMillis());
+            return run;
+        }
+
+        transferLearningController.exportBestGen(startTimeStampSource, runNumber);
         populationController.resetSets();
-        this.dataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
-        populationController.replaceChromosomes(transferLearningController.importBestGen(startTime, runNumber));
+        targetTaskDataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
 
-        indexOfBestChromosomes =findBestChromosomes();
+        long startTimeStamp = System.currentTimeMillis();
+        populationController.replaceChromosomes(transferLearningController.importBestGen(startTimeStampSource, runNumber));
+
+        indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
         bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
         counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Testing data");
-        run.setStartTimeStampOfTargetDataset(System.currentTimeMillis());
+        genCounter = 0;
+
+        TargetDataSet targetDataSet = new TargetDataSet(startTimeStamp);
+
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -605,7 +723,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -616,38 +734,51 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnTrainingDataset(counter+1);
-                counter = counter+1;
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfTargetDataset(System.currentTimeMillis());
-            run.setAccuracyOnTargetTrainingDataset(bestChromosomesAccuracy);
-            run.setAccuracyOnTargetTestingDataset(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunTargetSuccessful(true);
-        }catch (Exception exception){
-            run.setRunTargetSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(bestChromosomesAccuracy);
+            targetDataSet.setTestingAccuracy(getAccuracyOnTestingDataset(indexOfBestChromosomes,targetTaskDataController.getTestingDataSet()));
+            targetDataSet.setHasError(false);
+        }
+        catch (Exception exception){
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(0);
+            targetDataSet.setTestingAccuracy(0);
+            targetDataSet.setHasError(true);
             exception.printStackTrace();
         }
 
+        targetDataSet.setNumberOfGenerations(genCounter);
+        targetDataSet.setStopTimeStamp(stopTimeStamp);
+
+        run.setStopTimeStamp(stopTimeStamp);
+        run.setTargetDataSet(targetDataSet);
         return run;
     }
 
     private Run runGPWithGPCRTransferLearning(int runNumber) throws FileNotFoundException {
-        Run run = new Run();
-        run.setRunNumber(runNumber);
         seed = random.nextLong();
         random.setSeed(seed);
-        run.setSeed(seed);
 
-        int indexOfBestChromosomes =findBestChromosomes();
-        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
         int counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Training data");
-        run.setStartTimeStampOfSourceDatasetOne(System.currentTimeMillis());
+        int genCounter = 0;
+        long stopTimeStamp;
+
+        populationController.resetSets();
+        sourceTaskDataController = new SourceTaskDataController(pathToData+"\\Cleaned");
+
+        long startTimeStampSource = System.currentTimeMillis();
+        populationController.createPopulation();
+
+        int indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
+        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
+
+        Run run = new Run(runNumber, seed, startTimeStampSource);
+        SourceDataSet sourceDataSet = new SourceDataSet(startTimeStampSource);
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -664,7 +795,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -675,35 +806,45 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnSourceDatasetOne(counter+1);
-                counter = counter+1;
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfSourceDatasetOne(System.currentTimeMillis());
-            run.setAccuracyOnSourceTrainingDatasetOne(bestChromosomesAccuracy);
-            run.setAccuracyOnSourceTestingDatasetOne(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunSourceOneSuccessful(true);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSet.setAccuracy(bestChromosomesAccuracy);
+            sourceDataSet.setHasError(false);
         }
         catch (Exception exception){
-            run.setRunSourceOneSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSet.setAccuracy(0);
+            sourceDataSet.setHasError(true);
             exception.printStackTrace();
         }
+        sourceDataSet.setNumberOfGenerations(genCounter);
+        sourceDataSet.setStopTimeStamp(stopTimeStamp);
 
-        transferLearningController.exportGPCR(startTime, runNumber);
+        run.setSourceDataSetOne(sourceDataSet);
+        if (sourceDataSet.isHasError()){
+            run.setStopTimeStamp(System.currentTimeMillis());
+            return run;
+        }
+
+        transferLearningController.exportGPCR(startTimeStampSource, runNumber);
         populationController.resetSets();
-        this.dataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
-        populationController.addAliens(transferLearningController.importGPCR(startTime, runNumber));
-        populationController.recreatePopulation();
+        targetTaskDataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
 
-        indexOfBestChromosomes =findBestChromosomes();
+        long startTimeStamp = System.currentTimeMillis();
+        populationController.addAliens(transferLearningController.importGPCR(startTimeStampSource, runNumber));
+        populationController.createPopulation();
+
+        indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
         bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
         counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Training data");
-        run.setStartTimeStampOfTargetDataset(System.currentTimeMillis());
+        genCounter = 0;
+
+        TargetDataSet targetDataSet = new TargetDataSet(startTimeStamp);
+
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionTwo())));
 
@@ -725,7 +866,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -736,39 +877,50 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnTrainingDataset(counter+1);
-                counter = counter+1;
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfTargetDataset(System.currentTimeMillis());
-            run.setAccuracyOnTargetTrainingDataset(bestChromosomesAccuracy);
-            run.setAccuracyOnTargetTestingDataset(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunTargetSuccessful(true);
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(bestChromosomesAccuracy);
+            targetDataSet.setTestingAccuracy(getAccuracyOnTestingDataset(indexOfBestChromosomes,targetTaskDataController.getTestingDataSet()));
+            targetDataSet.setHasError(false);
         }
         catch (Exception exception){
-            run.setRunTargetSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(0);
+            targetDataSet.setTestingAccuracy(0);
+            targetDataSet.setHasError(true);
             exception.printStackTrace();
         }
 
+        targetDataSet.setNumberOfGenerations(genCounter);
+        targetDataSet.setStopTimeStamp(stopTimeStamp);
+
+        run.setStopTimeStamp(stopTimeStamp);
+        run.setTargetDataSet(targetDataSet);
         return run;
     }
 
     private Run runGPWithPSTTransferLearning(int runNumber) throws FileNotFoundException {
-        Run run = new Run();
-        run.setRunNumber(runNumber);
         seed = random.nextLong();
         random.setSeed(seed);
-        run.setSeed(seed);
 
-        int indexOfBestChromosomes =findBestChromosomes();
-        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
         int counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Training on source data set 1");
-        run.setStartTimeStampOfSourceDatasetOne(System.currentTimeMillis());
+        int genCounter = 0;
+        long stopTimeStamp;
+
+        populationController.resetSets();
+        sourceTaskDataController = new SourceTaskDataController(pathToData+"\\Cleaned");
+
+        long startTimeStampSource = System.currentTimeMillis();
+        populationController.createPopulation();
+
+        int indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
+        double bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
+        Run run = new Run(runNumber, seed, startTimeStampSource);
+        SourceDataSet sourceDataSetOne = new SourceDataSet(startTimeStampSource);
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -785,7 +937,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet1());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -796,33 +948,43 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnSourceDatasetOne(counter+1);
-                counter = counter+1;
+
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfSourceDatasetOne(System.currentTimeMillis());
-            run.setAccuracyOnSourceTrainingDatasetOne(bestChromosomesAccuracy);
-            run.setAccuracyOnSourceTestingDatasetOne(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunSourceOneSuccessful(true);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSetOne.setAccuracy(bestChromosomesAccuracy);
+            sourceDataSetOne.setHasError(false);
         }
         catch (Exception exception){
-            run.setRunSourceOneSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSetOne.setAccuracy(0);
+            sourceDataSetOne.setHasError(true);
             exception.printStackTrace();
+        }
+        sourceDataSetOne.setNumberOfGenerations(genCounter);
+        sourceDataSetOne.setStopTimeStamp(stopTimeStamp);
+
+        run.setSourceDataSetOne(sourceDataSetOne);
+        if (sourceDataSetOne.isHasError()){
+            run.setStopTimeStamp(System.currentTimeMillis());
+            return run;
         }
 
         List<ChromosomeWrapper> topPercentageOfPopulationForSourceTask1 = getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInGPCRMethod());
-        dataController.chanceMod();
+        sourceDataSetOne.setStopTimeStamp(System.currentTimeMillis());
+        run.setSourceDataSetOne(sourceDataSetOne);
 
-        populationController.recreatePopulation();
-        indexOfBestChromosomes =findBestChromosomes();
+        startTimeStampSource = System.currentTimeMillis();
+        populationController.createPopulation();
+        indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet2());
         bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
         counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("Training on source data set 2");
-        run.setStartTimeStampOfSourceDatasetTwo(System.currentTimeMillis());
+        genCounter = 0;
+
+        SourceDataSet sourceDataSetTwo = new SourceDataSet(startTimeStampSource);
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -839,7 +1001,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(sourceTaskDataController.getDataSet2());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -850,39 +1012,49 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnSourceDatasetTwo(counter+1);
-                counter = counter+1;
+
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfSourceDatasetTwo(System.currentTimeMillis());
-            run.setAccuracyOnSourceTrainingDatasetTwo(bestChromosomesAccuracy);
-            run.setAccuracyOnSourceTestingDatasetTwo(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunSourceTwoSuccessful(true);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSetTwo.setAccuracy(bestChromosomesAccuracy);
+            sourceDataSetTwo.setHasError(false);
         }
         catch (Exception exception){
-            run.setRunSourceTwoSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            sourceDataSetTwo.setAccuracy(0);
+            sourceDataSetTwo.setHasError(true);
             exception.printStackTrace();
+        }
+        sourceDataSetTwo.setNumberOfGenerations(genCounter);
+
+        run.setSourceDataSetTwo(sourceDataSetTwo);
+        if (sourceDataSetTwo.isHasError()){
+            run.setStopTimeStamp(System.currentTimeMillis());
+            return run;
         }
 
         List<ChromosomeWrapper> topPercentageOfPopulationForSourceTask2 = getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInGPCRMethod());
+        sourceDataSetTwo.setStopTimeStamp(stopTimeStamp);
+        run.setSourceDataSetTwo(sourceDataSetTwo);
 
-        transferLearningController.exportPST(topPercentageOfPopulationForSourceTask1, topPercentageOfPopulationForSourceTask2, startTime, runNumber);
-
+        transferLearningController.exportPST(topPercentageOfPopulationForSourceTask1, topPercentageOfPopulationForSourceTask2, startTimeStampSource, runNumber);
         populationController.resetSets();
-        this.dataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
-        populationController.addFunctions(transferLearningController.importPST(startTime, runNumber));
-        populationController.recreatePopulation();
+        targetTaskDataController = new TargetTaskDataController(pathToData+"\\Cleaned",dataSetName);
 
-        indexOfBestChromosomes =findBestChromosomes();
+        long startTimeStamp = System.currentTimeMillis();
+        populationController.addFunctions(transferLearningController.importPST(startTimeStampSource, runNumber));
+        populationController.createPopulation();
+
+        indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
         bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
+
         counterChange =0;
-        System.out.println("Run "+runNumber+" seed: "+seed);
-        System.out.println("testing data");
-        run.setStartTimeStampOfTargetDataset(System.currentTimeMillis());
+        genCounter = 0;
+
+        TargetDataSet targetDataSet = new TargetDataSet(startTimeStamp);
 
         try {
-            int counter = 0;
-            while ( bestChromosomesAccuracy < ConfigController.getMinAccuracy()){
+            while ( bestChromosomesAccuracy < ConfigController.getMaxAccuracy()){
                 List<Chromosome> newChromosomes = new ArrayList<>(ConfigController.getPopulationSize());
                 newChromosomes.addAll(populationController.reproductionChromosomes(selectParents(ConfigController.getPercentOfReproductionOne())));
 
@@ -899,7 +1071,7 @@ public class GPController {
                 populationController.setChromosomes(newChromosomes);
 
                 oldBestChromosomesAccuracy = bestChromosomesAccuracy;
-                indexOfBestChromosomes =findBestChromosomes();
+                indexOfBestChromosomes =findBestChromosomes(targetTaskDataController.getTrainingDataSet());
                 bestChromosomesAccuracy =populationController.getFitnessOfChromosomes(indexOfBestChromosomes);
 
                 if ((bestChromosomesAccuracy + ConfigController.getPadding() >= oldBestChromosomesAccuracy ) &&
@@ -910,19 +1082,26 @@ public class GPController {
                 if (counterChange>= ConfigController.getNumberOfSameBeforeEnding()) {
                     break;
                 }
-                System.out.println("Generations "+counter+" best chromosome's accuracy "+bestChromosomesAccuracy+"% Number of times the same: "+counterChange);
-                run.setNumberOfGenerationsOnTrainingDataset(counter+1);
-                counter = counter+1;
+
+                genCounter = genCounter+1;
             }
-            run.setStopTimeStampOfTargetDataset(System.currentTimeMillis());
-            run.setAccuracyOnTargetTrainingDataset(bestChromosomesAccuracy);
-            run.setAccuracyOnTargetTestingDataset(getAccuracyOnTestingDataset(indexOfBestChromosomes));
-            run.setRunTargetSuccessful(true);
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(bestChromosomesAccuracy);
+            targetDataSet.setTestingAccuracy(getAccuracyOnTestingDataset(indexOfBestChromosomes,targetTaskDataController.getTestingDataSet()));
+            targetDataSet.setHasError(false);
         }catch (Exception exception){
-            run.setRunTargetSuccessful(false);
+            stopTimeStamp = System.currentTimeMillis();
+            targetDataSet.setTrainingAccuracy(0);
+            targetDataSet.setTestingAccuracy(0);
+            targetDataSet.setHasError(true);
             exception.printStackTrace();
         }
 
+        targetDataSet.setNumberOfGenerations(genCounter);
+        targetDataSet.setStopTimeStamp(stopTimeStamp);
+
+        run.setStopTimeStamp(stopTimeStamp);
+        run.setTargetDataSet(targetDataSet);
         return run;
     }
 }

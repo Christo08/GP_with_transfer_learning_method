@@ -23,7 +23,7 @@ public class TransferLearningController {
     public TransferLearningController(GPController gpController) {
         this.gpController = gpController;
         this.pathToFolder = gpController.getPathToData()+"\\Data";
-        this.bestGenChromosomes = new LinkedList<>();
+        this.bestGenChromosomes = new ArrayList<>();
     }
 
     public void addChromosomesToBestGenArray(List<ChromosomeWrapper> chromosomes){
@@ -108,7 +108,7 @@ public class TransferLearningController {
 
     public void exportSubTree(long startTime, int runNumber){
         List<ChromosomeWrapper> populationSubset = gpController.getTopPercentageOfPopulation(ConfigController.getPercentOfChromosomeToSaveInSubTreeMethod());
-        List<Chromosome> subTreePopulationSubset = new LinkedList<>();
+        List<Chromosome> subTreePopulationSubset = new ArrayList<>();
         for (ChromosomeWrapper chromosome : populationSubset) {
             Chromosome subTree;
             do{
@@ -189,7 +189,7 @@ public class TransferLearningController {
             for (ChromosomeWrapper chromosomeOfPopulation2 : population2) {
                 List<Chromosome> commonSubTrees = PopulationController.getCommonSubTree(chromosomeOfPopulation1.chromosome,chromosomeOfPopulation2.chromosome);
                 for (Chromosome commonSubTree : commonSubTrees) {
-                    if (commonSubTree.getMaxDepth() >= ConfigController.getMaxDepth() &&
+                    if (commonSubTree.getMaxDepth() >= 3 && commonSubTree.getMaxDepth() <= 10 &&
                         !commonOutputSubTrees.stream().anyMatch(commonOutputSubTree -> commonOutputSubTree.hashCode() == commonSubTree.hashCode())){
                         commonOutputSubTrees.add(commonSubTree);
                     }
@@ -200,8 +200,15 @@ public class TransferLearningController {
         }
 
         String chromosomeSubTrees ="";
-        for (Chromosome commonSubTree : commonOutputSubTrees) {
-            chromosomeSubTrees += commonSubTree.toString()+"\n";
+        if (commonOutputSubTrees.size()>50) {
+            List<Integer> indexes = getLineNumber(50);
+            for (Integer index : indexes) {
+                chromosomeSubTrees += commonOutputSubTrees.get(index).toString()+"\n";
+            }
+        }else{
+            for (Chromosome commonSubTree : commonOutputSubTrees) {
+                chromosomeSubTrees += commonSubTree.toString()+"\n";
+            }
         }
         try {
             String fileName = startTime+"_"+runNumber+".txt";
@@ -230,14 +237,6 @@ public class TransferLearningController {
         }
         PSTReader.close();
         return output;
-    }
-
-    private boolean containsChromosome(Chromosome newChromosome, List<Chromosome> chromosomes) {
-        for (Chromosome value : chromosomes) {
-            if (value.hashCode() == newChromosome.hashCode())
-                return true;
-        }
-        return false;
     }
 
     private double getAverageOfChromosomes(List<ChromosomeWrapper> bestGenChromosome) {
@@ -269,5 +268,17 @@ public class TransferLearningController {
             return pathToFolder+"\\GPCR";
         else
             return pathToFolder+"\\PST";
+    }
+
+    private List<Integer> getLineNumber(int totalNumberOfLines) {
+        List<Integer> lineNumbers = new ArrayList<>();
+        int lineNumber;
+        while (lineNumbers.size() < totalNumberOfLines){
+            do {
+                lineNumber = GPController.getRandom().nextInt(totalNumberOfLines);
+            }while (lineNumbers.contains(lineNumber));
+            lineNumbers.add(lineNumber);
+        }
+        return lineNumbers;
     }
 }

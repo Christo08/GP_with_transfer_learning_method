@@ -55,7 +55,7 @@ public class PopulationController {
         this.chromosomes = new ArrayList<>();
     }
 
-    public static double evaluateConsequentFunction(String symbol, LinkedList<Chromosome> children) {
+    public static double evaluateConsequentFunction(String symbol, ArrayList<Chromosome> children) {
         Queue<Boolean> booleanInputs = new LinkedList<>();
         Queue<Double> doubleInputs = new LinkedList<>();
         Queue<Double> consequentInputs = new LinkedList<>();
@@ -70,7 +70,7 @@ public class PopulationController {
         return functions.get(symbol).evaluateConsequent(consequentInputs, booleanInputs, doubleInputs);
     }
 
-    public static boolean evaluateBooleanFunction(String symbol, LinkedList<Chromosome> children) {
+    public static boolean evaluateBooleanFunction(String symbol, ArrayList<Chromosome> children) {
         Queue<Boolean> booleanInputs = new LinkedList<>();
         Queue<Double> doubleInputs = new LinkedList<>();
         for (Chromosome child : children) {
@@ -82,7 +82,7 @@ public class PopulationController {
         return functions.get(symbol).evaluateBoolean(booleanInputs, doubleInputs);
     }
 
-    public static double evaluateMathFunction(String symbol, LinkedList<Chromosome> children) {
+    public static double evaluateMathFunction(String symbol, ArrayList<Chromosome> children) {
         Queue<Double> doubleInputs = new LinkedList<>();
         for (Chromosome child : children) {
             doubleInputs.add(child.evaluateDouble());
@@ -92,18 +92,6 @@ public class PopulationController {
 
     public static boolean isFunction(String symbol) {
         return hasFunctions && functions.containsKey(symbol);
-    }
-
-    public void initPopulation(){
-        for (int counter =0;  counter < ConfigController.getPopulationSize(); counter++)
-        {
-            Chromosome newChromosome;
-            do {
-                newChromosome = new Chromosome(ConfigController.getMaxDepth(),(counter% 2 ==0));
-            }while (containsChromosome(newChromosome));
-            ChromosomeWrapper newChromosomeWrapper = new ChromosomeWrapper(newChromosome);
-            chromosomes.add(newChromosomeWrapper);
-        }
     }
 
     public static boolean terminalSetContains(String symbol) {
@@ -157,13 +145,13 @@ public class PopulationController {
     }
 
     public static String getRandomConsequentTerminal(){
-        List<String> booleanTerminal = new ArrayList<>();
+        List<String> consequentTerminal = new ArrayList<>();
         for (Map.Entry<String, Integer> pair : consequentSet.entrySet()) {
             if (pair.getValue() ==0){
-                booleanTerminal.add(pair.getKey());
+                consequentTerminal.add(pair.getKey());
             }
         }
-        return booleanTerminal.get(GPController.getRandom().nextInt(booleanTerminal.size()));
+        return consequentTerminal.get(GPController.getRandom().nextInt(consequentTerminal.size()));
     }
 
     public static String getRandomConsequentFunction(){
@@ -214,10 +202,6 @@ public class PopulationController {
         }else {
             return Double.parseDouble(symbol);
         }
-    }
-
-    public Chromosome getChromosomes(int index){
-        return chromosomes.get(index).chromosome;
     }
 
     public void addFitnessOfChromosomes(int index, double fitness){
@@ -285,11 +269,11 @@ public class PopulationController {
         newChromosomesOne.renumberTheNodes(true);
         newChromosomesTwo.renumberTheNodes(true);
 
-        return new LinkedList<>(Arrays.asList(newChromosomesOne,newChromosomesTwo));
+        return new ArrayList<>(Arrays.asList(newChromosomesOne,newChromosomesTwo));
     }
 
     public List<Chromosome> reproductionChromosomes(List<Integer> chromosomesIndexes){
-        List<Chromosome> outputs = new LinkedList<>();
+        List<Chromosome> outputs = new ArrayList<>();
         for (int index: chromosomesIndexes){
             outputs.add(new Chromosome(chromosomes.get(index).chromosome));
         }
@@ -365,7 +349,7 @@ public class PopulationController {
     }
 
     public List<ChromosomeWrapper> getTopChromosomes(int numberOfChromosomes) {
-        List<ChromosomeWrapper> output = new LinkedList<>();
+        List<ChromosomeWrapper> output = new ArrayList<>();
         for (int counter =0; counter < numberOfChromosomes; counter++){
             output.add(chromosomes.get(counter));
         }
@@ -385,7 +369,7 @@ public class PopulationController {
         }
     }
 
-    public void recreatePopulation() {
+    public void createPopulation() {
         chromosomes.clear();
 
         for (int counter =0;  counter < ConfigController.getPopulationSize(); counter++)

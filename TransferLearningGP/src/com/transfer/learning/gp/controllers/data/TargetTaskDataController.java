@@ -1,29 +1,30 @@
 package com.transfer.learning.gp.controllers.data;
 
 import com.transfer.learning.gp.controllers.ConfigController;
+import com.transfer.learning.gp.controllers.gp.GPController;
 import com.transfer.learning.gp.controllers.gp.PopulationController;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.*;
 
-public class TargetTaskDataController extends DataController {
+public class TargetTaskDataController {
 
     private List<Map<String, Double>> trainingDataSet;
-    protected String dataSetTrainingName;
-
     private List<Map<String, Double>> testingDataSet;
-    protected String dataSetTestingName;
+    private static NumberFormat formatter = new DecimalFormat("#0.00");
 
     public TargetTaskDataController(String pathToData, String dataSetName) throws FileNotFoundException {
-        super();
         String pathToFile = pathToData+ ConfigController.getPathToTrainingDataset().get(dataSetName);
         File file = new File(pathToFile);
         Scanner reader = new Scanner(file);
-        trainingDataSet = new LinkedList<>();
-        double numberOfLines =0;
-        dataSetTrainingName = dataSetName+"_tr";
-        double counterOfLines = ConfigController.getSizeOfDataset().get(dataSetTrainingName);
+        int numberOfLines =0;
+        int counterOfLines = ConfigController.getSizeOfDataset().get(dataSetName);
+        List<Integer> trainingDataLines = getLineNumberOfTrainingData(counterOfLines);
+        trainingDataSet = new ArrayList<>(trainingDataLines.size());
+        testingDataSet = new ArrayList<>(counterOfLines-trainingDataLines.size());
         while (reader.hasNextLine()){
             String line = reader.nextLine().trim();
             if (!line.isEmpty()){
@@ -49,67 +50,45 @@ public class TargetTaskDataController extends DataController {
                         dataLine.put(attributeName, number);
                     }
                 }
-                trainingDataSet.add(dataLine);
-                printProgress(numberOfLines, counterOfLines, dataSetName+" training");
+                if(trainingDataLines.contains(numberOfLines))
+                    trainingDataSet.add(dataLine);
+                else
+                    testingDataSet.add(dataLine);
             }
         }
         reader.close();
-        System.out.println();
-
-        pathToFile = pathToData+ConfigController.getPathToTestingDataset().get(dataSetName);
-        file = new File(pathToFile);
-        reader = new Scanner(file);
-        dataSetTestingName = dataSetName+"_ts";
-        this.dataSetName=dataSetTestingName;
-        testingDataSet = new LinkedList<>();
-        numberOfLines =0;
-        counterOfLines = ConfigController.getSizeOfDataset().get(dataSetTestingName);
-        while (reader.hasNextLine()){
-            String line = reader.nextLine().trim();
-            if (!line.isEmpty()){
-                numberOfLines++;
-
-                List<String> splitLine = Arrays.asList(line.split(","));
-                Map<String, Double> dataLine = new HashMap<>();
-                for (int counter =0; counter < splitLine.size(); counter++)
-                {
-                    double number = Double.parseDouble(splitLine.get(counter));
-                    if (counter == splitLine.size()-1)
-                    {
-                        dataLine.put("ans", number-1);
-                        PopulationController.addClassToConsequentSet(String.valueOf(number-1));
-                    }
-                    else
-                    {
-                        String attributeName = String.valueOf((char) (65 + counter));
-                        if (numberOfLines ==1)
-                        {
-                            PopulationController.addAttributeToMathSet(attributeName);
-                        }
-                        dataLine.put(attributeName, number);
-                    }
-                }
-                testingDataSet.add(dataLine);
-                printProgress(numberOfLines, counterOfLines, dataSetName+" testing");
-            }
-        }
-        reader.close();
-        System.out.println();
-
-        dataSet = trainingDataSet;
-        this.dataSetName=dataSetTrainingName;
     }
 
-    @Override
-    public void chanceMod() {
-        if (dataSetTrainingName.equals(dataSetName)){
-            dataSet = testingDataSet;
-            this.dataSetName=dataSetTestingName;
-        }else{
-            dataSet = trainingDataSet;
-            this.dataSetName=dataSetTrainingName;
-        }
+    public List<Map<String, Double>> getTrainingDataSet() {
+        return trainingDataSet;
     }
 
+    public List<Map<String, Double>> getTestingDataSet() {
+        return testingDataSet;
+    }
 
+    private List<Integer> getLineNumberOfTrainingData(int totalNumberOfLines) {
+        List<Integer> lineNumbers = new ArrayList<>();
+        int lineNumber;
+        while (lineNumbers.size() < totalNumberOfLines*ConfigController.getPercentOfTrainingData()){
+            do {
+                lineNumber = GPController.getRandom().nextInt(totalNumberOfLines);
+            }while (lineNumbers.contains(lineNumber));
+            lineNumbers.add(lineNumber);
+        }
+        return lineNumbers;
+    }
+
+    private static void printProgress(double current, int total, String dataSetName) {
+
+        StringBuilder string = new StringBuilder(140);
+        double percent = (current/(double) total)* 100;
+        string.append('\r')
+                .append(formatter.format(percent))
+                .append("% of ")
+                .append(dataSetName)
+                .append(" dataset cleaned.");
+
+        System.out.print(string);
+    }
 }

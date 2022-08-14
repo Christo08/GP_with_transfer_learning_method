@@ -6,189 +6,63 @@ import javax.xml.bind.annotation.*;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Run {
     private int runNumber;
+
     private long seed;
-    //Target dataset
-    private double accuracyOnTargetTestingDataset;
-    private double accuracyOnTargetTrainingDataset;
-    private int numberOfGenerationsOnTrainingDataset;
-    private long startTimeStampOfTargetDataset;
-    private long stopTimeStampOfTargetDataset;
-    private boolean runTargetSuccessful;
+
+    private long startTimeStamp;
+    private long stopTimeStamp;
+    private long totalDuration;
+
     //Source one dataset
-    private double accuracyOnSourceTestingDatasetOne;
-    private double accuracyOnSourceTrainingDatasetOne;
-    private int numberOfGenerationsOnSourceDatasetOne;
-    private long startTimeStampOfSourceDatasetOne;
-    private long stopTimeStampOfSourceDatasetOne;
-    private boolean runSourceOneSuccessful;
+    private SourceDataSet sourceDataSetOne;
     //Source two dataset
-    private double accuracyOnSourceTestingDatasetTwo;
-    private double accuracyOnSourceTrainingDatasetTwo;
-    private int numberOfGenerationsOnSourceDatasetTwo;
-    private long startTimeStampOfSourceDatasetTwo;
-    private long stopTimeStampOfSourceDatasetTwo;
-    private boolean runSourceTwoSuccessful;
+    private SourceDataSet sourceDataSetTwo;
+    //Target dataset
+    private TargetDataSet targetDataSet;
 
     public Run() {
     }
 
-    public double getAccuracyOnTargetTestingDataset() {
-        return accuracyOnTargetTestingDataset;
-    }
-
-    public void setAccuracyOnTargetTestingDataset(double accuracyOnTargetTestingDataset) {
-        this.accuracyOnTargetTestingDataset = accuracyOnTargetTestingDataset;
-    }
-
-    public double getAccuracyOnTargetTrainingDataset() {
-        return accuracyOnTargetTrainingDataset;
-    }
-
-    public void setAccuracyOnTargetTrainingDataset(double accuracyOnTargetTrainingDataset) {
-        this.accuracyOnTargetTrainingDataset = accuracyOnTargetTrainingDataset;
-    }
-
-    public double getAccuracyOnSourceTestingDatasetOne() {
-        return accuracyOnSourceTestingDatasetOne;
-    }
-
-    public void setAccuracyOnSourceTestingDatasetOne(double accuracyOnSourceTestingDatasetOne) {
-        this.accuracyOnSourceTestingDatasetOne = accuracyOnSourceTestingDatasetOne;
-    }
-
-    public double getAccuracyOnSourceTrainingDatasetOne() {
-        return accuracyOnSourceTrainingDatasetOne;
-    }
-
-    public void setAccuracyOnSourceTrainingDatasetOne(double accuracyOnSourceTrainingDatasetOne) {
-        this.accuracyOnSourceTrainingDatasetOne = accuracyOnSourceTrainingDatasetOne;
-    }
-
-    public int getNumberOfGenerationsOnSourceDatasetOne() {
-        return numberOfGenerationsOnSourceDatasetOne;
-    }
-
-    public void setNumberOfGenerationsOnSourceDatasetOne(int numberOfGenerationsOnSourceDatasetOne) {
-        this.numberOfGenerationsOnSourceDatasetOne = numberOfGenerationsOnSourceDatasetOne;
-    }
-
-    public int getRunNumber() {
-        return runNumber;
-    }
-
-    public void setRunNumber(int runNumber) {
+    public Run(int runNumber, long seed, long startTimeStamp) {
         this.runNumber = runNumber;
-    }
-
-    public long getSeed() {
-        return seed;
-    }
-
-    public void setSeed(long seed) {
         this.seed = seed;
+        this.startTimeStamp = startTimeStamp;
     }
 
-    public long getStartTimeStampOfTargetDataset() {
-        return startTimeStampOfTargetDataset;
+    public void setStopTimeStamp(long stopTimeStamp) {
+        this.stopTimeStamp = stopTimeStamp;
+        this.totalDuration = this.stopTimeStamp - this.startTimeStamp;
     }
 
-    public void setStartTimeStampOfTargetDataset(long startTimeStampOfTargetDataset) {
-        this.startTimeStampOfTargetDataset = startTimeStampOfTargetDataset;
+    public void setSourceDataSetOne(SourceDataSet sourceDataSetOne) {
+        this.sourceDataSetOne = sourceDataSetOne;
     }
 
-    public long getStopTimeStampOfTargetDataset() {
-        return stopTimeStampOfTargetDataset;
+    public void setSourceDataSetTwo(SourceDataSet sourceDataSetTwo) {
+        this.sourceDataSetTwo = sourceDataSetTwo;
     }
 
-    public void setStopTimeStampOfTargetDataset(long stopTimeStampOfTargetDataset) {
-        this.stopTimeStampOfTargetDataset = stopTimeStampOfTargetDataset;
+    public void setTargetDataSet(TargetDataSet targetDataSet) {
+        this.targetDataSet = targetDataSet;
     }
 
-    public long getStartTimeStampOfSourceDatasetOne() {
-        return startTimeStampOfSourceDatasetOne;
+    public double getTestingAccuracy() {
+        return targetDataSet.getTestingAccuracy();
     }
 
-    public void setStartTimeStampOfSourceDatasetOne(long startTimeStampOfSourceDatasetOne) {
-        this.startTimeStampOfSourceDatasetOne = startTimeStampOfSourceDatasetOne;
+    public double getTrainingAccuracy() {
+        return targetDataSet.getTrainingAccuracy();
     }
 
-    public long getStopTimeStampOfSourceDatasetOne() {
-        return stopTimeStampOfSourceDatasetOne;
+    public double getGenerations() {
+        return targetDataSet.getNumberOfGenerations();
     }
 
-    public void setStopTimeStampOfSourceDatasetOne(long stopTimeStampOfSourceDatasetOne) {
-        this.stopTimeStampOfSourceDatasetOne = stopTimeStampOfSourceDatasetOne;
+    public double getTotalDuration() {
+        return totalDuration;
     }
 
-    public boolean isRunSourceOneSuccessful() {
-        return runSourceOneSuccessful;
-    }
-
-    public void setRunSourceOneSuccessful(boolean runSourceOneSuccessful) {
-        this.runSourceOneSuccessful = runSourceOneSuccessful;
-    }
-
-    public boolean isRunTargetSuccessful() {
-        return runTargetSuccessful;
-    }
-
-    public void setRunTargetSuccessful(boolean runTargetSuccessful) {
-        this.runTargetSuccessful = runTargetSuccessful;
-    }
-
-    public int getNumberOfGenerationsOnTrainingDataset() {
-        return numberOfGenerationsOnTrainingDataset;
-    }
-
-    public void setNumberOfGenerationsOnTrainingDataset(int numberOfGenerationsOnTrainingDataset) {
-        this.numberOfGenerationsOnTrainingDataset = numberOfGenerationsOnTrainingDataset;
-    }
-
-    public double getAccuracyOnSourceTestingDatasetTwo() {
-        return accuracyOnSourceTestingDatasetTwo;
-    }
-
-    public void setAccuracyOnSourceTestingDatasetTwo(double accuracyOnSourceTestingDatasetTwo) {
-        this.accuracyOnSourceTestingDatasetTwo = accuracyOnSourceTestingDatasetTwo;
-    }
-
-    public double getAccuracyOnSourceTrainingDatasetTwo() {
-        return accuracyOnSourceTrainingDatasetTwo;
-    }
-
-    public void setAccuracyOnSourceTrainingDatasetTwo(double accuracyOnSourceTrainingDatasetTwo) {
-        this.accuracyOnSourceTrainingDatasetTwo = accuracyOnSourceTrainingDatasetTwo;
-    }
-
-    public int getNumberOfGenerationsOnSourceDatasetTwo() {
-        return numberOfGenerationsOnSourceDatasetTwo;
-    }
-
-    public void setNumberOfGenerationsOnSourceDatasetTwo(int numberOfGenerationsOnSourceDatasetTwo) {
-        this.numberOfGenerationsOnSourceDatasetTwo = numberOfGenerationsOnSourceDatasetTwo;
-    }
-
-    public long getStartTimeStampOfSourceDatasetTwo() {
-        return startTimeStampOfSourceDatasetTwo;
-    }
-
-    public void setStartTimeStampOfSourceDatasetTwo(long startTimeStampOfSourceDatasetTwo) {
-        this.startTimeStampOfSourceDatasetTwo = startTimeStampOfSourceDatasetTwo;
-    }
-
-    public long getStopTimeStampOfSourceDatasetTwo() {
-        return stopTimeStampOfSourceDatasetTwo;
-    }
-
-    public void setStopTimeStampOfSourceDatasetTwo(long stopTimeStampOfSourceDatasetTwo) {
-        this.stopTimeStampOfSourceDatasetTwo = stopTimeStampOfSourceDatasetTwo;
-    }
-
-    public boolean isRunSourceTwoSuccessful() {
-        return runSourceTwoSuccessful;
-    }
-
-    public void setRunSourceTwoSuccessful(boolean runSourceTwoSuccessful) {
-        this.runSourceTwoSuccessful = runSourceTwoSuccessful;
+    public double getDuration() {
+        return targetDataSet.getDuration();
     }
 }
